@@ -29,3 +29,8 @@ See [docs/DB_SETUP.md](docs/DB_SETUP.md) for full details.
 `uvicorn src.main:app --reload`
 
 Open http://127.0.0.1:8000 in your browser.
+
+## Documentation
+
+- [docs/DB_SETUP.md](docs/DB_SETUP.md)
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
