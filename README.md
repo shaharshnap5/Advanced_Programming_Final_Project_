@@ -30,7 +30,24 @@ See [docs/DB_SETUP.md](docs/DB_SETUP.md) for full details.
 
 Open http://127.0.0.1:8000 in your browser.
 
+## Testing
+
+Run tests:
+
+```bash
+pytest
+```
+
+Run with coverage:
+
+```bash
+pytest --cov=src --cov-report=term-missing
+```
+
+See [docs/TESTING.md](docs/TESTING.md) for full details.
+
 ## Documentation
 
 - [docs/DB_SETUP.md](docs/DB_SETUP.md)
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- [docs/TESTING.md](docs/TESTING.md)
