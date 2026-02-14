@@ -7,7 +7,7 @@
 Windows (PowerShell):
 
 1. `python -m venv .venv`
-2. `./.venv/bin/activate`
+2. `.\.venv\Scripts\Activate.ps1`
 
 macOS/Linux (bash/zsh):
 
@@ -17,6 +17,12 @@ macOS/Linux (bash/zsh):
 ### 2) Install dependencies
 
 `pip install -r requirements.txt`
+
+### 2.5) Initialize the database
+
+`python .\scripts\init_db.py`
+
+See [docs/DB_SETUP.md](docs/DB_SETUP.md) for full details.
 
 ### 3) Run the server
 
