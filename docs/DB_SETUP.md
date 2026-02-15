@@ -1,5 +1,7 @@
 # Database setup
 
+> **Note**: The `data/` folder and `data/app.db` are **not** committed to git. They are generated locally when you run the init script.
+
 ## 1) Install dependencies
 
 ```bash
