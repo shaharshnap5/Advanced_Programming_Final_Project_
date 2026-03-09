@@ -178,6 +178,46 @@ async def test_treat_vehicle_not_eligible():
 
 
 @pytest.mark.asyncio
+async def test_report_degraded_success():
+    """Reporting a vehicle degraded should update its status."""
+    with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
+        mock_db = AsyncMock()
+        mock_get_db.return_value.__aenter__.return_value = mock_db
+        
+        with patch("src.controllers.vehicles_controller.service.report_vehicle_degraded") as mock_report:
+            mock_report.return_value = {
+                "vehicle_id": "V010",
+                "station_id": 1,
+                "vehicle_type": "bike",
+                "status": "degraded",
+                "rides_since_last_treated": 3,
+                "last_treated_date": "2025-01-01"
+            }
+            
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.post("/vehicles/V010/report-degraded")
+            
+            assert response.status_code == 200
+            assert response.json()["status"] == "degraded"
+
+
+@pytest.mark.asyncio
+async def test_report_degraded_not_found():
+    """Reporting degradation on non-existent vehicle returns 404."""
+    with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
+        mock_db = AsyncMock()
+        mock_get_db.return_value.__aenter__.return_value = mock_db
+        
+        with patch("src.controllers.vehicles_controller.service.report_vehicle_degraded") as mock_report:
+            mock_report.side_effect = ValueError("Vehicle V999 not found")
+            
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.post("/vehicles/V999/report-degraded")
+            
+            assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_treat_vehicle_needs_station():
     """Test treatment fails for degraded vehicle without station."""
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:

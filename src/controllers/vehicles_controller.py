@@ -61,3 +61,16 @@ async def treat_vehicle(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{vehicle_id}/report-degraded", response_model=Vehicle)
+async def report_degraded(vehicle_id: str) -> Vehicle:
+    """Endpoint for users to report a vehicle as degraded. Marks it degraded regardless of ride count."""
+    try:
+        async with get_db() as db:
+            updated = await service.report_vehicle_degraded(db, vehicle_id)
+        return Vehicle.model_validate(updated)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

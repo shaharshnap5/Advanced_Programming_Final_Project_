@@ -1,11 +1,10 @@
 from __future__ import annotations
 from pydantic import BaseModel
 import datetime
-from abc import ABC, abstractmethod
 
 
 
-class Vehicle(BaseModel, ABC):
+class Vehicle(BaseModel):
     vehicle_id: str
     station_id: int | None
     vehicle_type: str
@@ -13,16 +12,20 @@ class Vehicle(BaseModel, ABC):
     rides_since_last_treated: int
     last_treated_date: datetime.date | None
 
-    @abstractmethod
     def rent(self):
+        """Base rent method. Override in subclasses for specific behavior."""
         pass
 
 
     def return_vehicle(self, station_id: int):
-        """Returns the vehicle to a station and updates its status."""
+        """Returns the vehicle to a station and updates its status.
+
+        Degradation occurs only after more than 10 rides since last treatment.
+        """
 
         self.station_id = station_id
-        if self.rides_since_last_treated >= 7:
+        if self.rides_since_last_treated > 10:
+            # once the ride count exceeds 10, vehicle becomes degraded
             self.status = 'degraded'
         else:
             self.status = 'available'
@@ -31,13 +34,13 @@ class Vehicle(BaseModel, ABC):
         self.status = 'degraded'
 
 
-    @abstractmethod
-    def treat(self, treatment_date: str):
-       pass
+    def treat(self):
+        """Base treat method. Override in subclasses for specific behavior."""
+        pass
 
 
 
-class ElectricVehicle(Vehicle, ABC):
+class ElectricVehicle(Vehicle):
     battery_level: int
 
     def treat(self):
@@ -50,9 +53,10 @@ class ElectricVehicle(Vehicle, ABC):
 
 
     def rent(self):
-        """Rents the electric vehicle if it's available and has sufficient battery."""
+        """Rents the electric vehicle if it's available, within ride threshold, and has sufficient battery."""
 
-        if self.status == 'available' and self.rides_since_last_treated < 7 and self.battery_level > 20: # Check battery level before renting
+        # eligibility: must be available, <=10 rides since last treatment, battery >20%
+        if self.status == 'available' and self.rides_since_last_treated <= 10 and self.battery_level > 20:
             self.status = 'rented'
             self.station_id = None
         else:
@@ -72,9 +76,10 @@ class Bicycle(Vehicle):
     vehicle_type: str = 'bike'
 
     def rent(self):
-        """Rents the bicycle if it's available and has not reached the treatment threshold."""
+        """Rents the bicycle if it's available and within the eligibility rules."""
 
-        if self.status == 'available' and self.rides_since_last_treated < 7:
+        # a bike can be rented only when status is available and rides_since_last_treated <= 10
+        if self.status == 'available' and self.rides_since_last_treated <= 10:
             self.status = 'rented'
             self.station_id = None
         else:
