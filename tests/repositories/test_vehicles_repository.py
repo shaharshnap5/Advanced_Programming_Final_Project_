@@ -112,3 +112,23 @@ async def test_treat_vehicle_not_found(test_db):
     result = await repo.treat_vehicle(test_db, "V999", station_id=1)
     
     assert result is False
+
+
+@pytest.mark.asyncio
+async def test_update_vehicle_status(test_db):
+    repo = VehiclesRepository()
+    
+    result = await repo.update_vehicle_status(test_db, "V001", "maintenance")
+    
+    assert result is True
+    vehicle = await repo.get_by_id(test_db, "V001")
+    assert vehicle["status"] == "maintenance"
+
+
+@pytest.mark.asyncio
+async def test_update_vehicle_status_not_found(test_db):
+    repo = VehiclesRepository()
+    
+    result = await repo.update_vehicle_status(test_db, "V999", "maintenance")
+    
+    assert result is False

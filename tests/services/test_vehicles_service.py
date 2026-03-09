@@ -115,6 +115,22 @@ async def test_treat_vehicle_degraded_with_station():
     assert result["rides_since_last_treated"] == 0
     mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V001", 1)
 
+@pytest.mark.asyncio
+async def test_report_vehicle_degraded():
+    """Service should mark a vehicle degraded when reported."""
+    mock_repo = Mock(spec=VehiclesRepository)
+    mock_repo.get_by_id = AsyncMock(side_effect=[
+        {"vehicle_id": "V005", "station_id": 1, "vehicle_type": "bicycle", "status": "available", "rides_since_last_treated": 2, "last_treated_date": "2025-01-01"},
+        {"vehicle_id": "V005", "station_id": 1, "vehicle_type": "bicycle", "status": "degraded", "rides_since_last_treated": 2, "last_treated_date": "2025-01-01"}
+    ])
+    mock_repo.update_vehicle_status = AsyncMock(return_value=True)
+
+    service = VehiclesService(repository=mock_repo)
+    mock_db = Mock()
+
+    result = await service.report_vehicle_degraded(mock_db, "V005")
+    assert result["status"] == "degraded"
+    mock_repo.update_vehicle_status.assert_called_once_with(mock_db, "V005", "degraded")
 
 @pytest.mark.asyncio
 async def test_treat_vehicle_rides_threshold():

@@ -96,7 +96,8 @@ class TestBicycle:
             station_id=1,
             vehicle_type="bike",
             status="available",
-            rides_since_last_treated=7,
+            # rides > 10 makes it ineligible
+            rides_since_last_treated=11,
             last_treated_date=date.today()
         )
 
@@ -112,16 +113,17 @@ class TestBicycle:
         assert available_bicycle.status == "available"
 
     def test_bicycle_return_vehicle_at_threshold(self, available_bicycle):
-        """Test returning a bicycle with rides at treatment threshold."""
-        available_bicycle.rides_since_last_treated = 7
+        """Test returning a bicycle with rides exactly at degradation threshold (10)."""
+        available_bicycle.rides_since_last_treated = 10
         available_bicycle.return_vehicle(2)
 
         assert available_bicycle.station_id == 2
-        assert available_bicycle.status == "degraded"
+        # 10 rides is still rentable, degradation happens only when >10
+        assert available_bicycle.status == "available"
 
     def test_bicycle_return_vehicle_above_threshold(self, available_bicycle):
-        """Test returning a bicycle with rides above treatment threshold."""
-        available_bicycle.rides_since_last_treated = 10
+        """Test returning a bicycle with rides above degradation threshold."""
+        available_bicycle.rides_since_last_treated = 11
         available_bicycle.return_vehicle(3)
 
         assert available_bicycle.station_id == 3
@@ -415,13 +417,13 @@ class TestElectricVehicle:
             scooter.rent()
 
     def test_electric_vehicle_rent_rides_at_threshold(self):
-        """Test that renting with rides at threshold raises exception."""
+        """Test that renting with rides above eligibility threshold raises exception."""
         scooter = Scooter(
             vehicle_id="ESCOOTER003",
             station_id=1,
             vehicle_type="scooter",
             status="available",
-            rides_since_last_treated=7,
+            rides_since_last_treated=11,
             last_treated_date=date.today(),
             battery_level=100
         )
@@ -549,13 +551,13 @@ class TestVehicleCommonMethods:
             assert vehicle.status == "degraded", f"{vehicle_type} status not updated to degraded"
 
     def test_rent_available_with_max_rides(self):
-        """Test renting with rides exactly at threshold (6 rides - just before 7)."""
+        """Test renting with rides exactly at eligibility threshold (10 rides)."""
         bike = Bicycle(
             vehicle_id="BIKE_EDGE",
             station_id=1,
             vehicle_type="bike",
             status="available",
-            rides_since_last_treated=6,
+            rides_since_last_treated=10,
             last_treated_date=date.today()
         )
 
@@ -563,13 +565,13 @@ class TestVehicleCommonMethods:
         assert bike.status == "rented"
 
     def test_return_vehicle_exactly_at_threshold(self):
-        """Test return_vehicle with rides exactly at 7."""
+        """Test return_vehicle with rides just above degradation threshold."""
         ebike = ElectricBicycle(
             vehicle_id="EBIKE_EDGE",
             station_id=1,
             vehicle_type="ebike",
             status="rented",
-            rides_since_last_treated=7,
+            rides_since_last_treated=11,
             last_treated_date=date.today(),
             battery_level=50
         )

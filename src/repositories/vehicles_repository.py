@@ -99,3 +99,18 @@ class VehiclesRepository:
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
+
+    async def update_vehicle_status(self, db: aiosqlite.Connection, vehicle_id: str, status: str) -> bool:
+        """Set the status field for a given vehicle."""
+        cursor = await db.execute(
+            """
+            UPDATE vehicles
+            SET status = ?
+            WHERE vehicle_id = ?
+            """,
+            (status, vehicle_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        return affected > 0

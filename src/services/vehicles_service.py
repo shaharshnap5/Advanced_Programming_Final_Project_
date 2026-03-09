@@ -18,6 +18,21 @@ class VehiclesService:
     async def list_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[dict]:
         return await self._repository.list_by_station(db, station_id)
 
+    async def report_vehicle_degraded(self, db: aiosqlite.Connection, vehicle_id: str) -> dict:
+        """Marks a vehicle as degraded due to user report."""
+        vehicle = await self.get_vehicle_by_id(db, vehicle_id)
+        if not vehicle:
+            raise ValueError(f"Vehicle {vehicle_id} not found")
+
+        if vehicle["status"] == "degraded":
+            return vehicle
+
+        success = await self._repository.update_vehicle_status(db, vehicle_id, "degraded")
+        if not success:
+            raise Exception(f"Failed to report vehicle {vehicle_id} as degraded")
+
+        return await self.get_vehicle_by_id(db, vehicle_id)
+
     async def list_vehicles_eligible_for_treatment(self, db: aiosqlite.Connection) -> list[dict]:
         """List all vehicles that are eligible for treatment."""
         return await self._repository.list_vehicles_eligible_for_treatment(db)

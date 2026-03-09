@@ -172,8 +172,8 @@ class TestCompleteFleetIntegration:
         bike = fleet_system['bike']
         ebike = fleet_system['ebike']
 
-        # Bike has 3 rides, increment to 7
-        bike.rides_since_last_treated = 7
+        # Bike has 3 rides, artificially bump to above degradation threshold (>10)
+        bike.rides_since_last_treated = 11
         bike.return_vehicle(1)
         assert bike.status == "degraded"
 
