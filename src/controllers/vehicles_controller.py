@@ -32,3 +32,32 @@ async def list_vehicles(
             vehicles = await service.list_vehicles_by_station(db, station_id)
 
     return [Vehicle.model_validate(v) for v in vehicles]
+
+
+@router.get("/treatment/eligible", response_model=list[Vehicle])
+async def list_vehicles_eligible_for_treatment() -> list[Vehicle]:
+    """Get all vehicles eligible for treatment (degraded OR rides >= 7)."""
+    async with get_db() as db:
+        vehicles = await service.list_vehicles_eligible_for_treatment(db)
+    return [Vehicle.model_validate(v) for v in vehicles]
+
+
+@router.post("/{vehicle_id}/treat", response_model=Vehicle)
+async def treat_vehicle(
+    vehicle_id: str,
+    station_id: int | None = Query(None, description="Station to assign (required for degraded vehicles without station)"),
+) -> Vehicle:
+    """Perform maintenance on a vehicle.
+    Requirements:
+    - Vehicle must be degraded OR have >= 7 rides since last treatment
+    - Sets status='available', rides_since_last_treated=0, last_treated_date=today
+    - Assigns station for previously degraded vehicles
+    """
+    try:
+        async with get_db() as db:
+            treated_vehicle = await service.treat_vehicle(db, vehicle_id, station_id)
+        return Vehicle.model_validate(treated_vehicle)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
