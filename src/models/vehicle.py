@@ -1,11 +1,10 @@
 from __future__ import annotations
 from pydantic import BaseModel
 import datetime
-from abc import ABC, abstractmethod
 
 
 
-class Vehicle(BaseModel, ABC):
+class Vehicle(BaseModel):
     vehicle_id: str
     station_id: int | None
     vehicle_type: str
@@ -13,8 +12,8 @@ class Vehicle(BaseModel, ABC):
     rides_since_last_treated: int
     last_treated_date: datetime.date | None
 
-    @abstractmethod
     def rent(self):
+        """Base rent method. Override in subclasses for specific behavior."""
         pass
 
 
@@ -35,13 +34,13 @@ class Vehicle(BaseModel, ABC):
         self.status = 'degraded'
 
 
-    @abstractmethod
-    def treat(self, treatment_date: str):
-       pass
+    def treat(self):
+        """Base treat method. Override in subclasses for specific behavior."""
+        pass
 
 
 
-class ElectricVehicle(Vehicle, ABC):
+class ElectricVehicle(Vehicle):
     battery_level: int
 
     def treat(self):
