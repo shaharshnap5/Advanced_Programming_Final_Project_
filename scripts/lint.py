@@ -22,7 +22,10 @@ def main() -> int:
         if code != 0:
             return code
 
-    return run_step([sys.executable, "-m", "flake8", *TARGETS])
+    lint_code = run_step([sys.executable, "-m", "flake8", *TARGETS])
+    if lint_code == 0:
+        print("\nLint checks passed successfully ✅")
+    return lint_code
 
 
 if __name__ == "__main__":
