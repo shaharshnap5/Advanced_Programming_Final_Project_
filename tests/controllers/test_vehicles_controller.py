@@ -3,8 +3,10 @@ from __future__ import annotations
 import pytest
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import AsyncMock, patch
+from datetime import date
 
 from src.main import app
+from src.models.vehicle import Vehicle_type, Vehicle_status
 
 
 @pytest.mark.asyncio
@@ -17,10 +19,10 @@ async def test_get_vehicle_success():
             mock_get.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
-                "vehicle_type": "bicycle",
-                "status": "available",
+                "vehicle_type": Vehicle_type.bike,
+                "status": Vehicle_status.available,
                 "rides_since_last_treated": 5,
-                "last_treated_date": "2025-01-01"
+                "last_treated_date": date(2025, 1, 1)
             }
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -29,7 +31,7 @@ async def test_get_vehicle_success():
             assert response.status_code == 200
             data = response.json()
             assert data["vehicle_id"] == "V001"
-            assert data["vehicle_type"] == "bicycle"
+            assert data["vehicle_type"] == "bike"
 
 
 @pytest.mark.asyncio
@@ -56,8 +58,22 @@ async def test_list_vehicles():
         
         with patch("src.controllers.vehicles_controller.service.list_vehicles") as mock_list:
             mock_list.return_value = [
-                {"vehicle_id": "V001", "station_id": 1, "vehicle_type": "bicycle", "status": "available", "rides_since_last_treated": 5, "last_treated_date": "2025-01-01"},
-                {"vehicle_id": "V002", "station_id": 1, "vehicle_type": "scooter", "status": "degraded", "rides_since_last_treated": 10, "last_treated_date": "2025-01-02"}
+                {
+                    "vehicle_id": "V001",
+                    "station_id": 1,
+                    "vehicle_type": Vehicle_type.bike,
+                    "status": Vehicle_status.available,
+                    "rides_since_last_treated": 5,
+                    "last_treated_date": date(2025, 1, 1)
+                },
+                {
+                    "vehicle_id": "V002",
+                    "station_id": 1,
+                    "vehicle_type": Vehicle_type.scooter,
+                    "status": Vehicle_status.degraded,
+                    "rides_since_last_treated": 10,
+                    "last_treated_date": date(2025, 1, 2)
+                }
             ]
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -77,7 +93,14 @@ async def test_list_vehicles_by_station():
         
         with patch("src.controllers.vehicles_controller.service.list_vehicles_by_station") as mock_list:
             mock_list.return_value = [
-                {"vehicle_id": "V001", "station_id": 1, "vehicle_type": "bicycle", "status": "available", "rides_since_last_treated": 5, "last_treated_date": "2025-01-01"}
+                {
+                    "vehicle_id": "V001",
+                    "station_id": 1,
+                    "vehicle_type": Vehicle_type.bike,
+                    "status": Vehicle_status.available,
+                    "rides_since_last_treated": 5,
+                    "last_treated_date": date(2025, 1, 1)
+                }
             ]
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -97,8 +120,22 @@ async def test_list_vehicles_eligible_for_treatment():
         
         with patch("src.controllers.vehicles_controller.service.list_vehicles_eligible_for_treatment") as mock_list:
             mock_list.return_value = [
-                {"vehicle_id": "V001", "station_id": 1, "vehicle_type": "bicycle", "status": "degraded", "rides_since_last_treated": 10, "last_treated_date": "2025-01-01"},
-                {"vehicle_id": "V002", "station_id": 1, "vehicle_type": "scooter", "status": "available", "rides_since_last_treated": 7, "last_treated_date": "2025-01-02"}
+                {
+                    "vehicle_id": "V001",
+                    "station_id": 1,
+                    "vehicle_type": Vehicle_type.bike,
+                    "status": Vehicle_status.degraded,
+                    "rides_since_last_treated": 10,
+                    "last_treated_date": date(2025, 1, 1)
+                },
+                {
+                    "vehicle_id": "V002",
+                    "station_id": 1,
+                    "vehicle_type": Vehicle_type.scooter,
+                    "status": Vehicle_status.available,
+                    "rides_since_last_treated": 7,
+                    "last_treated_date": date(2025, 1, 2)
+                }
             ]
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -120,10 +157,10 @@ async def test_treat_vehicle_success():
             mock_treat.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
-                "vehicle_type": "bicycle",
-                "status": "available",
+                "vehicle_type": Vehicle_type.bike,
+                "status": Vehicle_status.available,
                 "rides_since_last_treated": 0,
-                "last_treated_date": "2025-03-09"
+                "last_treated_date": date.today()
             }
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -146,10 +183,10 @@ async def test_treat_vehicle_with_station():
             mock_treat.return_value = {
                 "vehicle_id": "V004",
                 "station_id": 3,
-                "vehicle_type": "bicycle",
-                "status": "available",
+                "vehicle_type": Vehicle_type.bike,
+                "status": Vehicle_status.available,
                 "rides_since_last_treated": 0,
-                "last_treated_date": "2025-03-09"
+                "last_treated_date": date.today()
             }
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -188,10 +225,10 @@ async def test_report_degraded_success():
             mock_report.return_value = {
                 "vehicle_id": "V010",
                 "station_id": 1,
-                "vehicle_type": "bike",
-                "status": "degraded",
+                "vehicle_type": Vehicle_type.bike,
+                "status": Vehicle_status.degraded,
                 "rides_since_last_treated": 3,
-                "last_treated_date": "2025-01-01"
+                "last_treated_date": date(2025, 1, 1)
             }
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -231,3 +268,4 @@ async def test_treat_vehicle_needs_station():
                 response = await client.post("/vehicles/V004/treat")
             
             assert response.status_code == 400
+

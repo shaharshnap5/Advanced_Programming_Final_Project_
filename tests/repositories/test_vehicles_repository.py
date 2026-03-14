@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.repositories.vehicles_repository import VehiclesRepository
+from src.models.vehicle import Vehicle_type, Vehicle_status
 
 
 @pytest.mark.asyncio
@@ -14,8 +15,8 @@ async def test_get_by_id(test_db):
     assert vehicle is not None
     assert vehicle["vehicle_id"] == "V001"
     assert vehicle["station_id"] == 1
-    assert vehicle["vehicle_type"] == "bicycle"
-    assert vehicle["status"] == "available"
+    assert vehicle["vehicle_type"] == "bicycle"  # From database as string
+    assert vehicle["status"] == "available"  # From database as string
     assert vehicle["rides_since_last_treated"] == 5
 
 
@@ -118,17 +119,17 @@ async def test_treat_vehicle_not_found(test_db):
 async def test_update_vehicle_status(test_db):
     repo = VehiclesRepository()
     
-    result = await repo.update_vehicle_status(test_db, "V001", "maintenance")
-    
+    result = await repo.update_vehicle_status(test_db, "V001", Vehicle_status.degraded)
+
     assert result is True
     vehicle = await repo.get_by_id(test_db, "V001")
-    assert vehicle["status"] == "maintenance"
+    assert vehicle["status"] == "degraded"
 
 
 @pytest.mark.asyncio
 async def test_update_vehicle_status_not_found(test_db):
     repo = VehiclesRepository()
     
-    result = await repo.update_vehicle_status(test_db, "V999", "maintenance")
-    
+    result = await repo.update_vehicle_status(test_db, "V999", Vehicle_status.degraded)
+
     assert result is False
