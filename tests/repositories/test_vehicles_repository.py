@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.repositories.vehicles_repository import VehiclesRepository
-from src.models.vehicle import Vehicle_type, Vehicle_status
+from src.models.vehicle import VehicleType, VehicleStatus
 
 
 @pytest.mark.asyncio
@@ -119,7 +119,7 @@ async def test_treat_vehicle_not_found(test_db):
 async def test_update_vehicle_status(test_db):
     repo = VehiclesRepository()
     
-    result = await repo.update_vehicle_status(test_db, "V001", Vehicle_status.degraded)
+    result = await repo.update_vehicle_status(test_db, "V001", VehicleStatus.degraded)
 
     assert result is True
     vehicle = await repo.get_by_id(test_db, "V001")
@@ -130,6 +130,6 @@ async def test_update_vehicle_status(test_db):
 async def test_update_vehicle_status_not_found(test_db):
     repo = VehiclesRepository()
     
-    result = await repo.update_vehicle_status(test_db, "V999", Vehicle_status.degraded)
+    result = await repo.update_vehicle_status(test_db, "V999", VehicleStatus.degraded)
 
     assert result is False

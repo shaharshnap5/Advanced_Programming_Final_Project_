@@ -6,7 +6,7 @@ from datetime import date
 
 from src.services.vehicles_service import VehiclesService
 from src.repositories.vehicles_repository import VehiclesRepository
-from src.models.vehicle import Vehicle_type, Vehicle_status
+from src.models.vehicle import VehicleType, VehicleStatus
 
 
 @pytest.mark.asyncio
@@ -15,8 +15,8 @@ async def test_get_vehicle_by_id():
     mock_repo.get_by_id = AsyncMock(return_value={
         "vehicle_id": "V001",
         "station_id": 1,
-        "vehicle_type": Vehicle_type.bike,
-        "status": Vehicle_status.available,
+        "vehicle_type": VehicleType.bike,
+        "status": VehicleStatus.available,
         "rides_since_last_treated": 5,
         "last_treated_date": date(2025, 1, 1)
     })
@@ -28,7 +28,7 @@ async def test_get_vehicle_by_id():
     
     assert result is not None
     assert result["vehicle_id"] == "V001"
-    assert result["vehicle_type"] == Vehicle_type.bike
+    assert result["vehicle_type"] == VehicleType.bike
     mock_repo.get_by_id.assert_called_once_with(mock_db, "V001")
 
 
@@ -50,8 +50,8 @@ async def test_get_vehicle_by_id_not_found():
 async def test_list_vehicles():
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.list_all = AsyncMock(return_value=[
-        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.available, "rides_since_last_treated": 5, "last_treated_date": date(2025, 1, 1)},
-        {"vehicle_id": "V002", "station_id": 1, "vehicle_type": Vehicle_type.scooter, "status": Vehicle_status.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 2)}
+        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.available, "rides_since_last_treated": 5, "last_treated_date": date(2025, 1, 1)},
+        {"vehicle_id": "V002", "station_id": 1, "vehicle_type": VehicleType.scooter, "status": VehicleStatus.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 2)}
     ])
     
     service = VehiclesService(repository=mock_repo)
@@ -68,7 +68,7 @@ async def test_list_vehicles():
 async def test_list_vehicles_by_station():
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.list_by_station = AsyncMock(return_value=[
-        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.available, "rides_since_last_treated": 5, "last_treated_date": date(2025, 1, 1)}
+        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.available, "rides_since_last_treated": 5, "last_treated_date": date(2025, 1, 1)}
     ])
     
     service = VehiclesService(repository=mock_repo)
@@ -85,8 +85,8 @@ async def test_list_vehicles_eligible_for_treatment():
     """Test listing vehicles eligible for treatment."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.list_vehicles_eligible_for_treatment = AsyncMock(return_value=[
-        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 1)},
-        {"vehicle_id": "V002", "station_id": 1, "vehicle_type": Vehicle_type.scooter, "status": Vehicle_status.available, "rides_since_last_treated": 7, "last_treated_date": date(2025, 1, 2)}
+        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 1)},
+        {"vehicle_id": "V002", "station_id": 1, "vehicle_type": VehicleType.scooter, "status": VehicleStatus.available, "rides_since_last_treated": 7, "last_treated_date": date(2025, 1, 2)}
     ])
     
     service = VehiclesService(repository=mock_repo)
@@ -103,8 +103,8 @@ async def test_treat_vehicle_degraded_with_station():
     """Test treating a degraded vehicle that already has a station."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 1)},
-        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.available, "rides_since_last_treated": 0, "last_treated_date": date.today()}
+        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 1)},
+        {"vehicle_id": "V001", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.available, "rides_since_last_treated": 0, "last_treated_date": date.today()}
     ])
     mock_repo.treat_vehicle = AsyncMock(return_value=True)
     
@@ -113,7 +113,7 @@ async def test_treat_vehicle_degraded_with_station():
     
     result = await service.treat_vehicle(mock_db, "V001")
     
-    assert result["status"] == Vehicle_status.available
+    assert result["status"] == VehicleStatus.available
     assert result["rides_since_last_treated"] == 0
     mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V001", 1)
 
@@ -122,8 +122,8 @@ async def test_report_vehicle_degraded():
     """Service should mark a vehicle degraded when reported."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        {"vehicle_id": "V005", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.available, "rides_since_last_treated": 2, "last_treated_date": date(2025, 1, 1)},
-        {"vehicle_id": "V005", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.degraded, "rides_since_last_treated": 2, "last_treated_date": date(2025, 1, 1)}
+        {"vehicle_id": "V005", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.available, "rides_since_last_treated": 2, "last_treated_date": date(2025, 1, 1)},
+        {"vehicle_id": "V005", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.degraded, "rides_since_last_treated": 2, "last_treated_date": date(2025, 1, 1)}
     ])
     mock_repo.update_vehicle_status = AsyncMock(return_value=True)
 
@@ -131,16 +131,16 @@ async def test_report_vehicle_degraded():
     mock_db = Mock()
 
     result = await service.report_vehicle_degraded(mock_db, "V005")
-    assert result["status"] == Vehicle_status.degraded
-    mock_repo.update_vehicle_status.assert_called_once_with(mock_db, "V005", Vehicle_status.degraded)
+    assert result["status"] == VehicleStatus.degraded
+    mock_repo.update_vehicle_status.assert_called_once_with(mock_db, "V005", VehicleStatus.degraded)
 
 @pytest.mark.asyncio
 async def test_treat_vehicle_rides_threshold():
     """Test treating a vehicle that reached rides threshold but not degraded."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        {"vehicle_id": "V002", "station_id": 2, "vehicle_type": Vehicle_type.scooter, "status": Vehicle_status.available, "rides_since_last_treated": 7, "last_treated_date": date(2025, 1, 2)},
-        {"vehicle_id": "V002", "station_id": 2, "vehicle_type": Vehicle_type.scooter, "status": Vehicle_status.available, "rides_since_last_treated": 0, "last_treated_date": date.today()}
+        {"vehicle_id": "V002", "station_id": 2, "vehicle_type": VehicleType.scooter, "status": VehicleStatus.available, "rides_since_last_treated": 7, "last_treated_date": date(2025, 1, 2)},
+        {"vehicle_id": "V002", "station_id": 2, "vehicle_type": VehicleType.scooter, "status": VehicleStatus.available, "rides_since_last_treated": 0, "last_treated_date": date.today()}
     ])
     mock_repo.treat_vehicle = AsyncMock(return_value=True)
     
@@ -149,7 +149,7 @@ async def test_treat_vehicle_rides_threshold():
     
     result = await service.treat_vehicle(mock_db, "V002")
     
-    assert result["status"] == Vehicle_status.available
+    assert result["status"] == VehicleStatus.available
     assert result["rides_since_last_treated"] == 0
 
 
@@ -158,7 +158,7 @@ async def test_treat_vehicle_not_eligible():
     """Test that treatment fails for non-eligible vehicle."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(return_value={
-        "vehicle_id": "V003", "station_id": 1, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.available, "rides_since_last_treated": 3, "last_treated_date": date(2025, 1, 3)
+        "vehicle_id": "V003", "station_id": 1, "vehicle_type": VehicleType.bike, "status": VehicleStatus.available, "rides_since_last_treated": 3, "last_treated_date": date(2025, 1, 3)
     })
     
     service = VehiclesService(repository=mock_repo)
@@ -173,7 +173,7 @@ async def test_treat_vehicle_degraded_needs_station():
     """Test that treatment fails for degraded vehicle without station."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(return_value={
-        "vehicle_id": "V004", "station_id": None, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 4)
+        "vehicle_id": "V004", "station_id": None, "vehicle_type": VehicleType.bike, "status": VehicleStatus.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 4)
     })
     
     service = VehiclesService(repository=mock_repo)
@@ -188,8 +188,8 @@ async def test_treat_vehicle_degraded_assign_station():
     """Test treating a degraded vehicle by assigning a station."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        {"vehicle_id": "V004", "station_id": None, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 4)},
-        {"vehicle_id": "V004", "station_id": 3, "vehicle_type": Vehicle_type.bike, "status": Vehicle_status.available, "rides_since_last_treated": 0, "last_treated_date": date.today()}
+        {"vehicle_id": "V004", "station_id": None, "vehicle_type": VehicleType.bike, "status": VehicleStatus.degraded, "rides_since_last_treated": 10, "last_treated_date": date(2025, 1, 4)},
+        {"vehicle_id": "V004", "station_id": 3, "vehicle_type": VehicleType.bike, "status": VehicleStatus.available, "rides_since_last_treated": 0, "last_treated_date": date.today()}
     ])
     mock_repo.treat_vehicle = AsyncMock(return_value=True)
     
@@ -198,7 +198,7 @@ async def test_treat_vehicle_degraded_assign_station():
     
     result = await service.treat_vehicle(mock_db, "V004", station_id=3)
     
-    assert result["status"] == Vehicle_status.available
+    assert result["status"] == VehicleStatus.available
     assert result["rides_since_last_treated"] == 0
     assert result["station_id"] == 3
     mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V004", 3)
