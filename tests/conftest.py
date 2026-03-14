@@ -31,6 +31,12 @@ async def test_db():
           last_treated_date TEXT,
           FOREIGN KEY(station_id) REFERENCES stations(station_id)
         );
+
+        CREATE TABLE users (
+          user_id TEXT PRIMARY KEY,
+          payment_token TEXT NOT NULL,
+          current_ride_id TEXT
+        );
     """)
     
     # Seed test data
