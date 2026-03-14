@@ -46,6 +46,20 @@ pytest --cov=src --cov-report=term-missing
 
 See [docs/TESTING.md](docs/TESTING.md) for full details.
 
+## Linting
+
+Check lint:
+
+```bash
+python .\scripts\lint.py
+```
+
+Auto-fix formatting, then lint:
+
+```bash
+python .\scripts\lint.py --fix
+```
+
 ## Documentation
 
 - [docs/DB_SETUP.md](docs/DB_SETUP.md)
