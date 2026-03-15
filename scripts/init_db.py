@@ -10,28 +10,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.db import get_db
+from db.schema import CREATE_SQL
 STATIONS_CSV = PROJECT_ROOT / "data" / "stations.csv"
 VEHICLES_CSV = PROJECT_ROOT / "data" / "vehicles.csv"
 
-CREATE_SQL = """
-CREATE TABLE IF NOT EXISTS stations (
-  station_id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  lat REAL NOT NULL,
-  lon REAL NOT NULL,
-  max_capacity INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS vehicles (
-  vehicle_id TEXT PRIMARY KEY,
-  station_id INTEGER,
-  vehicle_type TEXT NOT NULL,
-  status TEXT NOT NULL,
-  rides_since_last_treated INTEGER NOT NULL,
-  last_treated_date TEXT,
-  FOREIGN KEY(station_id) REFERENCES stations(station_id)
-);
-"""
 
 
 async def init_db() -> None:
