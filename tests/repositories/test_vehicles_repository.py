@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.repositories.vehicles_repository import VehiclesRepository
-from src.models.vehicle import VehicleType, VehicleStatus
+from src.models.vehicle import VehicleType, VehicleStatus, Vehicle
 
 
 @pytest.mark.asyncio
@@ -13,11 +13,12 @@ async def test_get_by_id(test_db):
     vehicle = await repo.get_by_id(test_db, "V001")
     
     assert vehicle is not None
-    assert vehicle["vehicle_id"] == "V001"
-    assert vehicle["station_id"] == 1
-    assert vehicle["vehicle_type"] == "bicycle"  # From database as string
-    assert vehicle["status"] == "available"  # From database as string
-    assert vehicle["rides_since_last_treated"] == 5
+    assert isinstance(vehicle, Vehicle)
+    assert vehicle.vehicle_id == "V001"
+    assert vehicle.station_id == 1
+    assert vehicle.vehicle_type == VehicleType.bike
+    assert vehicle.status == VehicleStatus.available
+    assert vehicle.rides_since_last_treated == 5
 
 
 @pytest.mark.asyncio
@@ -36,8 +37,9 @@ async def test_list_all(test_db):
     vehicles = await repo.list_all(test_db)
     
     assert len(vehicles) == 2
-    assert vehicles[0]["vehicle_id"] == "V001"
-    assert vehicles[1]["vehicle_id"] == "V002"
+    assert all(isinstance(v, Vehicle) for v in vehicles)
+    assert vehicles[0].vehicle_id == "V001"
+    assert vehicles[1].vehicle_id == "V002"
 
 
 @pytest.mark.asyncio
@@ -48,7 +50,8 @@ async def test_list_by_station(test_db):
     
     assert len(vehicles) == 2
     for vehicle in vehicles:
-        assert vehicle["station_id"] == 1
+        assert isinstance(vehicle, Vehicle)
+        assert vehicle.station_id == 1
 
 
 @pytest.mark.asyncio
@@ -73,13 +76,13 @@ async def test_list_vehicles_eligible_for_treatment(test_db):
     eligible = await repo.list_vehicles_eligible_for_treatment(test_db)
     
     # Should include V002 (rides >= 7)
-    vehicle_ids = [v["vehicle_id"] for v in eligible]
+    vehicle_ids = [v.vehicle_id for v in eligible]
     assert "V002" in vehicle_ids
     
     # Verify rides count
     for vehicle in eligible:
-        if vehicle["vehicle_id"] == "V002":
-            assert vehicle["rides_since_last_treated"] >= 7
+        if vehicle.vehicle_id == "V002":
+            assert vehicle.rides_since_last_treated >= 7
 
 
 @pytest.mark.asyncio
@@ -100,9 +103,9 @@ async def test_treat_vehicle_success(test_db):
     
     # Verify treatment applied
     vehicle = await repo.get_by_id(test_db, "V001")
-    assert vehicle["status"] == "available"
-    assert vehicle["rides_since_last_treated"] == 0
-    assert vehicle["last_treated_date"] is not None
+    assert vehicle.status == VehicleStatus.available
+    assert vehicle.rides_since_last_treated == 0
+    assert vehicle.last_treated_date is not None
 
 
 @pytest.mark.asyncio
@@ -123,7 +126,7 @@ async def test_update_vehicle_status(test_db):
 
     assert result is True
     vehicle = await repo.get_by_id(test_db, "V001")
-    assert vehicle["status"] == "degraded"
+    assert vehicle.status == VehicleStatus.degraded
 
 
 @pytest.mark.asyncio

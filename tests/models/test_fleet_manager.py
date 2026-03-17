@@ -11,6 +11,7 @@ Tests cover:
 import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, patch
+from datetime import datetime
 
 from src.models.FleetManager import FleetManager
 from src.models.station import Station
@@ -160,7 +161,9 @@ class TestFleetManagerStateDictionaries:
         ride = Ride(
             ride_id="RIDE001",
             user_id="USER001",
-            vehicle_id="VEHICLE001"
+            vehicle_id="VEHICLE001",
+            start_station_id=1,
+            start_time=datetime.now()
         )
 
         fleet_manager.active_rides["RIDE001"] = ride
@@ -197,7 +200,13 @@ class TestFleetManagerStateDictionaries:
     def test_multiple_active_rides(self, fleet_manager):
         """Test managing multiple active rides."""
         rides = [
-            Ride(ride_id=f"RIDE{i:03d}", user_id=f"USER{i:03d}", vehicle_id=f"VEHICLE{i:03d}")
+            Ride(
+                ride_id=f"RIDE{i:03d}",
+                user_id=f"USER{i:03d}",
+                vehicle_id=f"VEHICLE{i:03d}",
+                start_station_id=i,
+                start_time=datetime.now()
+            )
             for i in range(1, 4)
         ]
 
@@ -239,7 +248,9 @@ class TestFleetManagerStateDictionaries:
         ride = Ride(
             ride_id="RIDE_RETRIEVE",
             user_id="USER_RETRIEVE",
-            vehicle_id="VEHICLE_RETRIEVE"
+            vehicle_id="VEHICLE_RETRIEVE",
+            start_station_id=1,
+            start_time=datetime.now()
         )
         fleet_manager.active_rides["RIDE_RETRIEVE"] = ride
 
@@ -276,7 +287,9 @@ class TestFleetManagerStateDictionaries:
         ride = Ride(
             ride_id="RIDE_REMOVE",
             user_id="USER_REMOVE",
-            vehicle_id="VEHICLE_REMOVE"
+            vehicle_id="VEHICLE_REMOVE",
+            start_station_id=1,
+            start_time=datetime.now()
         )
         fleet_manager.active_rides["RIDE_REMOVE"] = ride
         assert "RIDE_REMOVE" in fleet_manager.active_rides

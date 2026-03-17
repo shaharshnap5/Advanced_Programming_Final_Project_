@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import aiosqlite
+from src.models.user import User
 
 
 class UsersRepository:
-    async def get_by_id(self, db: aiosqlite.Connection, user_id: str) -> dict | None:
+    async def get_by_id(self, db: aiosqlite.Connection, user_id: str) -> User | None:
         cursor = await db.execute(
             """
             SELECT user_id, payment_token, current_ride_id
@@ -15,7 +16,7 @@ class UsersRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return dict(row) if row else None
+        return User(**dict(row)) if row else None
 
     async def create(
         self,

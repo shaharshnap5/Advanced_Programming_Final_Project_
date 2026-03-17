@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from fastapi import Depends
+import aiosqlite
 from fastapi import APIRouter, HTTPException, Query
 
 from src.db import get_db
@@ -11,41 +12,43 @@ service = VehiclesService()
 
 
 @router.get("/{vehicle_id}", response_model=Vehicle)
-async def get_vehicle(vehicle_id: str) -> Vehicle:
-    async with get_db() as db:
-        vehicle = await service.get_vehicle_by_id(db, vehicle_id)
+async def get_vehicle(vehicle_id: str,
+                      db: aiosqlite.Connection = Depends(get_db)) -> Vehicle:
+    vehicle = await service.get_vehicle_by_id(db, vehicle_id)
 
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
 
-    return Vehicle.model_validate(vehicle)
+    return vehicle
 
 
 @router.get("", response_model=list[Vehicle])
 async def list_vehicles(
     station_id: int | None = Query(None, description="Filter by station_id"),
+    db: aiosqlite.Connection = Depends(get_db)
 ) -> list[Vehicle]:
-    async with get_db() as db:
-        if station_id is None:
+    if station_id is None:
             vehicles = await service.list_vehicles(db)
-        else:
-            vehicles = await service.list_vehicles_by_station(db, station_id)
+    else:
+        vehicles = await service.list_vehicles_by_station(db, station_id)
 
-    return [Vehicle.model_validate(v) for v in vehicles]
+    return vehicles
 
 
 @router.get("/treatment/eligible", response_model=list[Vehicle])
-async def list_vehicles_eligible_for_treatment() -> list[Vehicle]:
+async def list_vehicles_eligible_for_treatment(
+        db: aiosqlite.Connection = Depends(get_db)
+) -> list[Vehicle]:
     """Get all vehicles eligible for treatment (degraded OR rides >= 7)."""
-    async with get_db() as db:
-        vehicles = await service.list_vehicles_eligible_for_treatment(db)
-    return [Vehicle.model_validate(v) for v in vehicles]
+    vehicles = await service.list_vehicles_eligible_for_treatment(db)
+    return vehicles
 
 
 @router.post("/{vehicle_id}/treat", response_model=Vehicle)
 async def treat_vehicle(
     vehicle_id: str,
     station_id: int | None = Query(None, description="Station to assign (required for degraded vehicles without station)"),
+    db: aiosqlite.Connection = Depends(get_db)
 ) -> Vehicle:
     """Perform maintenance on a vehicle.
     Requirements:
@@ -54,9 +57,8 @@ async def treat_vehicle(
     - Assigns station for previously degraded vehicles
     """
     try:
-        async with get_db() as db:
-            treated_vehicle = await service.treat_vehicle(db, vehicle_id, station_id)
-        return Vehicle.model_validate(treated_vehicle)
+        treated_vehicle = await service.treat_vehicle(db, vehicle_id, station_id)
+        return treated_vehicle
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -64,12 +66,13 @@ async def treat_vehicle(
 
 
 @router.post("/{vehicle_id}/report-degraded", response_model=Vehicle)
-async def report_degraded(vehicle_id: str) -> Vehicle:
+async def report_degraded(vehicle_id: str,
+                            db: aiosqlite.Connection = Depends(get_db)
+                          ) -> Vehicle:
     """Endpoint for users to report a vehicle as degraded. Marks it degraded regardless of ride count."""
     try:
-        async with get_db() as db:
-            updated = await service.report_vehicle_degraded(db, vehicle_id)
-        return Vehicle.model_validate(updated)
+        updated = await service.report_vehicle_degraded(db, vehicle_id)
+        return updated
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

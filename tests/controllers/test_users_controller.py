@@ -5,6 +5,7 @@ from httpx import AsyncClient, ASGITransport
 from unittest.mock import AsyncMock, patch
 
 from src.main import app
+from src.models.user import User
 
 
 @pytest.mark.asyncio
@@ -14,7 +15,7 @@ async def test_create_user_success():
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
         with patch("src.controllers.users_controller.service.create_user") as mock_create_user:
-            mock_create_user.return_value = {"user_id": "USER001"}
+            mock_create_user.return_value = User(user_id="USER001", payment_token="tok_visa_123456")
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post("/users", json={"user_id": "USER001"})

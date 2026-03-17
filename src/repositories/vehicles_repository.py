@@ -1,10 +1,11 @@
 from __future__ import annotations
+from src.models.vehicle import Vehicle
 
 import aiosqlite
 
 
 class VehiclesRepository:
-    async def get_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> dict | None:
+    async def get_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
         cursor = await db.execute(
             """
             SELECT
@@ -21,9 +22,9 @@ class VehiclesRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return dict(row) if row else None
+        return Vehicle(**dict(row)) if row else None
 
-    async def list_all(self, db: aiosqlite.Connection) -> list[dict]:
+    async def list_all(self, db: aiosqlite.Connection) -> list[Vehicle]:
         cursor = await db.execute(
             """
             SELECT
@@ -38,9 +39,9 @@ class VehiclesRepository:
         )
         rows = await cursor.fetchall()
         await cursor.close()
-        return [dict(row) for row in rows]
+        return [Vehicle(**dict(row)) for row in rows]
 
-    async def list_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[dict]:
+    async def list_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
         cursor = await db.execute(
             """
             SELECT
@@ -57,9 +58,9 @@ class VehiclesRepository:
         )
         rows = await cursor.fetchall()
         await cursor.close()
-        return [dict(row) for row in rows]
+        return [Vehicle(**dict(row)) for row in rows]
 
-    async def list_vehicles_eligible_for_treatment(self, db: aiosqlite.Connection) -> list[dict]:
+    async def list_vehicles_eligible_for_treatment(self, db: aiosqlite.Connection) -> list[Vehicle]:
         """List vehicles eligible for treatment: degraded OR rides >= 7."""
         cursor = await db.execute(
             """
@@ -76,7 +77,7 @@ class VehiclesRepository:
         )
         rows = await cursor.fetchall()
         await cursor.close()
-        return [dict(row) for row in rows]
+        return [Vehicle(**dict(row)) for row in rows]
 
     async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> bool:
         """Perform maintenance on a vehicle.
@@ -114,3 +115,40 @@ class VehiclesRepository:
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
+
+    async def get_available_vehicle(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle] | None:
+        """Finds one available vehicle at the given station."""
+        cursor = await db.execute(
+            """
+            SELECT vehicle_id, vehicle_type 
+            FROM vehicles 
+            WHERE station_id = ? AND status = 'available' 
+            LIMIT 1
+            """,
+            (station_id,)
+        )
+        row = await cursor.fetchone()
+        return Vehicle(**dict(row)) if row else None
+
+    async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str):
+        """Updates the vehicle status to rented and removes it from the station."""
+        await db.execute(
+            """
+            UPDATE vehicles 
+            SET status = 'rented', station_id = NULL 
+            WHERE vehicle_id = ?
+            """,
+            (vehicle_id,)
+        )
+        # We commit right away to ensure state is safely persisted to the disk!
+        await db.commit()
+
+    async def get_available_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
+        query = """
+            SELECT * FROM vehicles 
+            WHERE station_id = ? AND status = 'available'
+        """
+        db.row_factory = aiosqlite.Row
+        async with db.execute(query, (station_id,)) as cursor:
+            rows = await cursor.fetchall()
+            return [Vehicle(**dict(row)) for row in rows]

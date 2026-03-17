@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 from .user import User
-from .vehicle import Vehicle
+from .vehicle import Vehicle, VehicleType
 
 
 
@@ -8,6 +10,9 @@ class Ride(BaseModel):
     ride_id: str
     user_id: str
     vehicle_id: str
+    start_station_id: int
+    start_time: datetime
+    end_time: datetime | None = None
     is_degraded_report: bool = False  # Track if the ride ended due to a breakdown
 
     def calculate_cost(self) -> int:
@@ -30,3 +35,6 @@ def process_end_of_ride(user: User, ride: Ride):
 
     # 3. Clear the user's active ride
     user.current_ride_id = None
+
+
+

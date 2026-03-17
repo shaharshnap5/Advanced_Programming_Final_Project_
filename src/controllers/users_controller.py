@@ -5,6 +5,7 @@ from pydantic import BaseModel, ValidationError, Field
 
 from src.db import get_db
 from src.services.users_service import UsersService
+from src.models.user import User
 
 
 class UserCreate(BaseModel):
@@ -15,9 +16,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 service = UsersService()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
-async def create_user(request: Request) -> dict[str, str]:
-    """Register a new user and return the generated user_id."""
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=User)
+async def create_user(request: Request) -> User:
+    """Register a new user and return the created user model."""
     try:
         payload = await request.json()
     except Exception as e:  # pragma: no cover
@@ -34,4 +35,4 @@ async def create_user(request: Request) -> dict[str, str]:
         except ValueError as err:
             raise HTTPException(status_code=409, detail=str(err))
 
-    return {"user_id": result["user_id"]}
+    return result

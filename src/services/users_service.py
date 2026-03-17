@@ -4,14 +4,18 @@ import uuid
 import aiosqlite
 
 from src.repositories.users_repository import UsersRepository
+from src.models.user import User
 
 
 class UsersService:
     def __init__(self, repository: UsersRepository | None = None) -> None:
         self._repository = repository or UsersRepository()
 
-    async def create_user(self, db: aiosqlite.Connection, user_id: str) -> dict:
+    async def create_user(self, db: aiosqlite.Connection, user_id: str) -> User:
         """Create a new user with a mocked payment token.
+
+        Returns:
+            User: The created user model
 
         Raises:
             ValueError: if the user already exists.
@@ -27,4 +31,4 @@ class UsersService:
         if not created:
             raise Exception("Failed to create user")
 
-        return {"user_id": user_id, "payment_token": token}
+        return User(user_id=user_id, payment_token=token)
