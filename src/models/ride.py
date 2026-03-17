@@ -20,10 +20,13 @@ class Ride(BaseModel):
 # --- Inside FleetManager or API endpoint for ending a ride ---
 
 def process_end_of_ride(user: User, ride: Ride):
-    """Processes the end of a ride by calculating the cost and charging the user."""
+    """Processes the end of a ride by calculating the cost, charging the user, and clearing the active ride."""
 
     # 1. The Ride calculates the cost (either 15 or 0)
     final_price = ride.calculate_cost()
 
     # 2. The User is charged that exact amount
     user.charge(final_price)
+
+    # 3. Clear the user's active ride
+    user.current_ride_id = None

@@ -9,7 +9,7 @@ class UsersRepository:
     async def get_by_id(self, db: aiosqlite.Connection, user_id: str) -> User | None:
         cursor = await db.execute(
             """
-            SELECT user_id, payment_token
+            SELECT user_id, payment_token, current_ride_id
             FROM users
             WHERE user_id = ?
             """,
