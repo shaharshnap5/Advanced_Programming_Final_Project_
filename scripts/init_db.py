@@ -14,8 +14,6 @@ from db.schema import CREATE_SQL
 STATIONS_CSV = PROJECT_ROOT / "data" / "stations.csv"
 VEHICLES_CSV = PROJECT_ROOT / "data" / "vehicles.csv"
 
-
-
 async def init_db() -> None:
     async with get_db() as db:
         await db.executescript(CREATE_SQL)

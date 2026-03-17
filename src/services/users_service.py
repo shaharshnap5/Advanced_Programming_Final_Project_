@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 import aiosqlite
 
+from src.models.user import User
 from src.repositories.users_repository import UsersRepository
 
 
@@ -10,7 +11,7 @@ class UsersService:
     def __init__(self, repository: UsersRepository | None = None) -> None:
         self._repository = repository or UsersRepository()
 
-    async def create_user(self, db: aiosqlite.Connection, user_id: str) -> dict:
+    async def create_user(self, db: aiosqlite.Connection, user_id: str) -> User:
         """Create a new user with a mocked payment token.
 
         Raises:
@@ -27,4 +28,4 @@ class UsersService:
         if not created:
             raise Exception("Failed to create user")
 
-        return {"user_id": user_id, "payment_token": token}
+        return User(user_id=user_id, payment_token=token)

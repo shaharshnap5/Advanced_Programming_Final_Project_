@@ -98,12 +98,8 @@ class TestCompleteFleetIntegration:
         station1 = fleet_system['station1']
         station2 = fleet_system['station2']
 
-        # Verify user can start ride
+        # Verify user can start ride (stateless)
         assert user.can_start_ride() is True
-
-        # Simulate ride start
-        user.current_ride_id = "RIDE001"
-        assert user.can_start_ride() is False
 
         # Rent the bike
         bike.rent()
@@ -548,12 +544,8 @@ class TestCompleteFleetIntegration:
         station1 = fleet_system['station1']
         station2 = fleet_system['station2']
 
-        # Verify user can start ride
+        # Verify user can start ride (stateless)
         assert user.can_start_ride() is True
-
-        # Simulate ride start
-        user.current_ride_id = "RIDE001"
-        assert user.can_start_ride() is False
 
         # Rent the bike
         bike.rent()
@@ -583,7 +575,6 @@ class TestCompleteFleetIntegration:
 
         # Process end of ride and charge user
         process_end_of_ride(user, ride)
-        assert user.current_ride_id is None
 
     def test_multiple_users_multiple_vehicles(self, fleet_system):
         """Test multiple users renting different vehicles simultaneously."""
@@ -596,13 +587,11 @@ class TestCompleteFleetIntegration:
         station1 = fleet_system['station1']
 
         # User 1 rents bike
-        user1.current_ride_id = "RIDE001"
         bike.rent()
         station1.remove_vehicle("BIKE001")
         assert bike.status == "rented"
 
         # User 2 rents ebike
-        user2.current_ride_id = "RIDE002"
         ebike.rent()
         station1.remove_vehicle("EBIKE001")
         assert ebike.status == "rented"
