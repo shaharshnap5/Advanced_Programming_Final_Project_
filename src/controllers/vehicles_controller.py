@@ -28,7 +28,7 @@ async def list_vehicles(
     db: aiosqlite.Connection = Depends(get_db)
 ) -> list[Vehicle]:
     if station_id is None:
-            vehicles = await service.list_vehicles(db)
+        vehicles = await service.list_vehicles(db)
     else:
         vehicles = await service.list_vehicles_by_station(db, station_id)
 

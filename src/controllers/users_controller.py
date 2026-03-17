@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError, Field
+from aiosqlite import Connection
 
 from src.db import get_db
 from src.services.users_service import UsersService
@@ -17,7 +18,7 @@ service = UsersService()
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=User)
-async def create_user(request: Request) -> User:
+async def create_user(request: Request, db: Connection = Depends(get_db)) -> User:
     """Register a new user and return the created user model."""
     try:
         payload = await request.json()
@@ -29,10 +30,9 @@ async def create_user(request: Request) -> User:
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=e.errors())
 
-    async with get_db() as db:
-        try:
-            result = await service.create_user(db, data.user_id)
-        except ValueError as err:
-            raise HTTPException(status_code=409, detail=str(err))
+    try:
+        result = await service.create_user(db, data.user_id)
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
 
     return result
