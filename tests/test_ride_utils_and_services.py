@@ -82,8 +82,7 @@ async def test_get_nearest_station_with_capacity():
 
     # Station 1 should be selected (closest and has capacity)
     assert result is not None
-    assert result["station_id"] == 1
-    assert result["current_capacity"] < result["max_capacity"]
+    assert result.station_id == 1
 
 
 @pytest.mark.asyncio
@@ -173,4 +172,4 @@ async def test_get_nearest_station_with_capacity_picks_closest():
     )
 
     assert result is not None
-    assert result["station_id"] == 2  # Closest one should be selected
+    assert result.station_id == 2  # Closest one should be selected

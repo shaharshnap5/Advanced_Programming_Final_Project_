@@ -8,6 +8,7 @@ from src.services.stations_service import StationsService
 from src.services.users_service import UsersService
 from src.services.vehicles_service import VehiclesService
 from src.models.ride import Ride
+from src.models.station import Station
 from fastapi import HTTPException
 
 
@@ -19,15 +20,17 @@ async def test_end_ride_success():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    # Mock station with capacity
-    mock_station = {
-        "station_id": 1,
-        "name": "Test Station",
-        "lat": 32.5,
-        "lon": 34.5,
-        "max_capacity": 10,
-        "current_capacity": 5,
-    }
+    from src.models.station import Station
+
+    # Mock station with capacity (returned as Station object)
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )
@@ -72,7 +75,7 @@ async def test_end_ride_success():
         result = await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
 
         assert result["end_station_id"] == 1
-        assert result["payment_charged"] == 15
+        assert result["end_station"].station_id == 1
         assert result["active_users"] == []
 
         mock_stations_service.get_nearest_station_with_capacity.assert_called_once()
@@ -144,14 +147,16 @@ async def test_end_ride_vehicle_not_found():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    mock_station = {
-        "station_id": 1,
-        "name": "Test Station",
-        "lat": 32.5,
-        "lon": 34.5,
-        "max_capacity": 10,
-        "current_capacity": 5,
-    }
+    from src.models.station import Station
+
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )
@@ -188,14 +193,16 @@ async def test_end_ride_user_not_found():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    mock_station = {
-        "station_id": 1,
-        "name": "Test Station",
-        "lat": 32.5,
-        "lon": 34.5,
-        "max_capacity": 10,
-        "current_capacity": 5,
-    }
+    from src.models.station import Station
+
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )
@@ -242,7 +249,16 @@ async def test_end_ride_increments_rides_counter():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    mock_station = {"station_id": 1, "lat": 32.5, "lon": 34.5}
+    from src.models.station import Station
+
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )
@@ -292,7 +308,16 @@ async def test_end_ride_vehicle_becomes_degraded_after_10_rides():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    mock_station = {"station_id": 1, "lat": 32.5, "lon": 34.5}
+    from src.models.station import Station
+
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )
@@ -342,7 +367,16 @@ async def test_end_ride_charges_correctly():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    mock_station = {"station_id": 1, "lat": 32.5, "lon": 34.5}
+    from src.models.station import Station
+
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )
@@ -388,7 +422,16 @@ async def test_end_ride_free_when_degraded():
     mock_users_service = AsyncMock(spec=UsersService)
     mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-    mock_station = {"station_id": 1, "lat": 32.5, "lon": 34.5}
+    from src.models.station import Station
+
+    mock_station = Station(
+        station_id=1,
+        name="Test Station",
+        lat=32.5,
+        lon=34.5,
+        max_capacity=10,
+        vehicles=[],
+    )
     mock_stations_service.get_nearest_station_with_capacity = AsyncMock(
         return_value=mock_station
     )

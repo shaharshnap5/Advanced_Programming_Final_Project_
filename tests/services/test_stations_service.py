@@ -24,8 +24,8 @@ async def test_get_station_by_id():
     result = await service.get_station_by_id(mock_db, 1)
     
     assert result is not None
-    assert result["station_id"] == 1
-    assert result["name"] == "Test Station"
+    assert result.station_id == 1
+    assert result.name == "Test Station"
     mock_repo.get_by_id.assert_called_once_with(mock_db, 1)
 
 
@@ -61,6 +61,6 @@ async def test_get_nearest_station():
     result = await service.get_nearest_station(mock_db, lon=34.0, lat=32.0)
     
     assert result is not None
-    assert result["station_id"] == 1
-    assert "distance" in result
+    assert result.station_id == 1
+    assert result.name == "Nearest Station"
     mock_repo.get_nearest.assert_called_once_with(mock_db, lon=34.0, lat=32.0)

@@ -26,14 +26,14 @@ class TestRideCompletionFlow:
         mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
         # Mock data
-        station_data = {
-            "station_id": 5,
-            "name": "Downtown Station",
-            "lat": 32.5,
-            "lon": 34.5,
-            "max_capacity": 20,
-            "current_capacity": 10,
-        }
+        station_data = Station(
+            station_id=5,
+            name="Downtown Station",
+            lat=32.5,
+            lon=34.5,
+            max_capacity=20,
+            vehicles=[],
+        )
 
         vehicle_data = {
             "vehicle_id": "BIKE_001",
@@ -100,7 +100,14 @@ class TestRideCompletionFlow:
         mock_users_service = AsyncMock(spec=UsersService)
         mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-        station_data = {"station_id": 3, "lat": 32.3, "lon": 34.3}
+        station_data = Station(
+            station_id=3,
+            name="Degraded Station",
+            lat=32.3,
+            lon=34.3,
+            max_capacity=10,
+            vehicles=[],
+        )
         vehicle_data = {
             "vehicle_id": "SCOOTER_001",
             "station_id": 1,
@@ -154,7 +161,14 @@ class TestRideCompletionFlow:
         mock_users_service = AsyncMock(spec=UsersService)
         mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-        station_data = {"station_id": 7, "lat": 32.7, "lon": 34.7}
+        station_data = Station(
+            station_id=7,
+            name="Shared Station",
+            lat=32.7,
+            lon=34.7,
+            max_capacity=10,
+            vehicles=[],
+        )
         vehicle_data = {
             "vehicle_id": "BIKE_002",
             "station_id": 2,
@@ -208,7 +222,14 @@ class TestRideCompletionFlow:
         mock_users_service = AsyncMock(spec=UsersService)
         mock_vehicles_service = AsyncMock(spec=VehiclesService)
 
-        station_data = {"station_id": 10, "lat": 32.10, "lon": 34.10}
+        station_data = Station(
+            station_id=10,
+            name="Degradation Station",
+            lat=32.10,
+            lon=34.10,
+            max_capacity=10,
+            vehicles=[],
+        )
         vehicle_data = {
             "vehicle_id": "EBIKE_001",
             "station_id": 5,

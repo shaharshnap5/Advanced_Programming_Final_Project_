@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from src.models.FleetManager import FleetManager
 from src.models.ride import Ride
+from src.models.station import Station
 from src.models.user import User
 from src.services.stations_service import StationsService
 from src.services.users_service import UsersService
@@ -30,7 +31,7 @@ class RidesService:
 
         # Find the nearest available station with a free locking spot
         async with fm.state_lock:
-            station = await self._stations_service.get_nearest_station_with_capacity(
+            station: Station | None = await self._stations_service.get_nearest_station_with_capacity(
                 db, lon, lat
             )
 
@@ -50,7 +51,7 @@ class RidesService:
             await self._vehicles_service.dock_vehicle(
                 db,
                 ride.vehicle_id,
-                station["station_id"],
+                station.station_id,
                 new_rides,
                 new_status,
             )
@@ -71,7 +72,8 @@ class RidesService:
         active_users = [r.user_id for r in fm.active_rides.values()]
 
         return {
-            "end_station_id": station["station_id"],
+            "end_station_id": station.station_id,
+            "end_station": station,
             "payment_charged": cost,
             "active_users": active_users,
         }

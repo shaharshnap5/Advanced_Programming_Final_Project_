@@ -21,6 +21,7 @@ async def test_end_ride_controller_valid_payload():
     ) as mock_end_ride:
         mock_end_ride.return_value = {
             "end_station_id": 1,
+            "end_station": {"station_id": 1, "name": "Test Station", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "vehicles": []},
             "payment_charged": 15,
             "active_users": [],
         }
@@ -29,6 +30,7 @@ async def test_end_ride_controller_valid_payload():
 
         assert response.status_code == 200
         assert response.json()["end_station_id"] == 1
+        assert response.json()["end_station"]["station_id"] == 1
         assert response.json()["payment_charged"] == 15
         mock_end_ride.assert_called_once()
 
