@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import aiosqlite
 
+from src.models.user import User
+
 
 class UsersRepository:
-    async def get_by_id(self, db: aiosqlite.Connection, user_id: str) -> dict | None:
+    async def get_by_id(self, db: aiosqlite.Connection, user_id: str) -> User | None:
         cursor = await db.execute(
             """
-            SELECT user_id, payment_token, current_ride_id
+            SELECT user_id, payment_token
             FROM users
             WHERE user_id = ?
             """,
@@ -15,21 +17,20 @@ class UsersRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return dict(row) if row else None
+        return User(**dict(row)) if row else None
 
     async def create(
         self,
         db: aiosqlite.Connection,
         user_id: str,
         payment_token: str,
-        current_ride_id: str | None = None,
     ) -> bool:
         cursor = await db.execute(
             """
-            INSERT OR IGNORE INTO users (user_id, payment_token, current_ride_id)
-            VALUES (?, ?, ?)
+            INSERT OR IGNORE INTO users (user_id, payment_token)
+            VALUES (?, ?)
             """,
-            (user_id, payment_token, current_ride_id),
+            (user_id, payment_token),
         )
         await db.commit()
         affected = cursor.rowcount

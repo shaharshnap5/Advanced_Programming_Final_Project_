@@ -1,21 +1,17 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import ValidationError
 
 from src.db import get_db
+from src.models.user import UserCreate
 from src.services.users_service import UsersService
-
-
-class UserCreate(BaseModel):
-    user_id: str = Field(..., min_length=1, description="Unique identifier for the user")
-
 
 router = APIRouter(prefix="/users", tags=["users"])
 service = UsersService()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def create_user(request: Request) -> dict[str, str]:
     """Register a new user and return the generated user_id."""
     try:
@@ -34,4 +30,4 @@ async def create_user(request: Request) -> dict[str, str]:
         except ValueError as err:
             raise HTTPException(status_code=409, detail=str(err))
 
-    return {"user_id": result["user_id"]}
+    return {"user_id": result.user_id}

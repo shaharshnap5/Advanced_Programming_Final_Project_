@@ -118,34 +118,19 @@ class TestProcessEndOfRide:
 
     def test_process_end_of_ride_normal_ride(self, mock_user, normal_ride):
         """Test processing the end of a normal ride charges the user 15 ILS."""
-        mock_user.current_ride_id = "RIDE001"
 
         process_end_of_ride(mock_user, normal_ride)
 
         # Verify user was charged 15 ILS
         mock_user.charge.assert_called_once_with(15)
-        # Verify current_ride_id was cleared
-        assert mock_user.current_ride_id is None
 
     def test_process_end_of_ride_degraded_ride(self, mock_user, degraded_ride):
         """Test processing the end of a degraded ride charges the user 0 ILS."""
-        mock_user.current_ride_id = "RIDE002"
 
         process_end_of_ride(mock_user, degraded_ride)
 
         # Verify user was charged 0 ILS
         mock_user.charge.assert_called_once_with(0)
-        # Verify current_ride_id was cleared
-        assert mock_user.current_ride_id is None
-
-    def test_process_end_of_ride_clears_current_ride(self, mock_user, normal_ride):
-        """Test that current_ride_id is cleared after processing."""
-        mock_user.current_ride_id = "RIDE001"
-        initial_ride_id = mock_user.current_ride_id
-
-        process_end_of_ride(mock_user, normal_ride)
-
-        assert mock_user.current_ride_id is None
 
     def test_process_end_of_ride_calls_charge_method(self, mock_user, normal_ride):
         """Test that the charge method is called with the correct amount."""
@@ -159,10 +144,7 @@ class TestProcessEndOfRide:
         ride1 = Ride(ride_id="R1", user_id="U1", vehicle_id="V1", is_degraded_report=False)
         ride2 = Ride(ride_id="R2", user_id="U2", vehicle_id="V2", is_degraded_report=True)
 
-        mock_user.current_ride_id = "R1"
         process_end_of_ride(mock_user, ride1)
-
-        mock_user.current_ride_id = "R2"
         process_end_of_ride(mock_user, ride2)
 
         assert mock_user.charge.call_count == 2
