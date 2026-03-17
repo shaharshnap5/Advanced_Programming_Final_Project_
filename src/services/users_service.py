@@ -28,3 +28,12 @@ class UsersService:
             raise Exception("Failed to create user")
 
         return {"user_id": user_id, "payment_token": token}
+
+    async def get_user_by_id(self, db: aiosqlite.Connection, user_id: str) -> dict | None:
+        return await self._repository.get_by_id(db, user_id)
+
+    async def clear_current_ride(self, db: aiosqlite.Connection, user_id: str) -> bool:
+        return await self._repository.update_current_ride_id(db, user_id, None)
+
+    async def list_active_users(self, db: aiosqlite.Connection) -> list[dict]:
+        return await self._repository.list_active_users(db)

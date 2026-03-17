@@ -77,3 +77,22 @@ class VehiclesService:
 
         # Return updated vehicle
         return await self.get_vehicle_by_id(db, vehicle_id)
+
+    async def dock_vehicle(
+        self,
+        db: aiosqlite.Connection,
+        vehicle_id: str,
+        station_id: int,
+        rides_since_last_treated: int,
+        status: str,
+    ) -> dict:
+        """Dock a vehicle after a ride ends.
+
+        Updates the station assignment, ride counter, and status.
+        """
+        success = await self._repository.dock_vehicle(
+            db, vehicle_id, station_id, rides_since_last_treated, status
+        )
+        if not success:
+            raise Exception(f"Failed to dock vehicle {vehicle_id}")
+        return await self.get_vehicle_by_id(db, vehicle_id)

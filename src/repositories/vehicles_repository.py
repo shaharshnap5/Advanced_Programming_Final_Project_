@@ -114,3 +114,25 @@ class VehiclesRepository:
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
+
+    async def dock_vehicle(
+        self,
+        db: aiosqlite.Connection,
+        vehicle_id: str,
+        station_id: int,
+        rides_since_last_treated: int,
+        status: str,
+    ) -> bool:
+        """Dock a vehicle at a station, updating its ride count and status."""
+        cursor = await db.execute(
+            """
+            UPDATE vehicles
+            SET station_id = ?, rides_since_last_treated = ?, status = ?
+            WHERE vehicle_id = ?
+            """,
+            (station_id, rides_since_last_treated, status, vehicle_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        return affected > 0

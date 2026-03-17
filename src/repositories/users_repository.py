@@ -35,3 +35,34 @@ class UsersRepository:
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
+
+    async def update_current_ride_id(
+        self,
+        db: aiosqlite.Connection,
+        user_id: str,
+        current_ride_id: str | None,
+    ) -> bool:
+        cursor = await db.execute(
+            """
+            UPDATE users
+            SET current_ride_id = ?
+            WHERE user_id = ?
+            """,
+            (current_ride_id, user_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        return affected > 0
+
+    async def list_active_users(self, db: aiosqlite.Connection) -> list[dict]:
+        cursor = await db.execute(
+            """
+            SELECT user_id
+            FROM users
+            WHERE current_ride_id IS NOT NULL
+            """
+        )
+        rows = await cursor.fetchall()
+        await cursor.close()
+        return [dict(row) for row in rows]
