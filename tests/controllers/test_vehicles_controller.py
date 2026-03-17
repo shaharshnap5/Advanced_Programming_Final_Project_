@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 from datetime import date
 
 from src.main import app
-from src.models.vehicle import Vehicle_type, Vehicle_status
+from src.models.vehicle import VehicleType, VehicleStatus
 
 
 @pytest.mark.asyncio
@@ -19,8 +19,8 @@ async def test_get_vehicle_success():
             mock_get.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
-                "vehicle_type": Vehicle_type.bike,
-                "status": Vehicle_status.available,
+                "vehicle_type": VehicleType.bike,
+                "status": VehicleStatus.available,
                 "rides_since_last_treated": 5,
                 "last_treated_date": date(2025, 1, 1)
             }
@@ -61,16 +61,16 @@ async def test_list_vehicles():
                 {
                     "vehicle_id": "V001",
                     "station_id": 1,
-                    "vehicle_type": Vehicle_type.bike,
-                    "status": Vehicle_status.available,
+                    "vehicle_type": VehicleType.bike,
+                    "status": VehicleStatus.available,
                     "rides_since_last_treated": 5,
                     "last_treated_date": date(2025, 1, 1)
                 },
                 {
                     "vehicle_id": "V002",
                     "station_id": 1,
-                    "vehicle_type": Vehicle_type.scooter,
-                    "status": Vehicle_status.degraded,
+                    "vehicle_type": VehicleType.scooter,
+                    "status": VehicleStatus.degraded,
                     "rides_since_last_treated": 10,
                     "last_treated_date": date(2025, 1, 2)
                 }
@@ -96,8 +96,8 @@ async def test_list_vehicles_by_station():
                 {
                     "vehicle_id": "V001",
                     "station_id": 1,
-                    "vehicle_type": Vehicle_type.bike,
-                    "status": Vehicle_status.available,
+                    "vehicle_type": VehicleType.bike,
+                    "status": VehicleStatus.available,
                     "rides_since_last_treated": 5,
                     "last_treated_date": date(2025, 1, 1)
                 }
@@ -123,16 +123,16 @@ async def test_list_vehicles_eligible_for_treatment():
                 {
                     "vehicle_id": "V001",
                     "station_id": 1,
-                    "vehicle_type": Vehicle_type.bike,
-                    "status": Vehicle_status.degraded,
+                    "vehicle_type": VehicleType.bike,
+                    "status": VehicleStatus.degraded,
                     "rides_since_last_treated": 10,
                     "last_treated_date": date(2025, 1, 1)
                 },
                 {
                     "vehicle_id": "V002",
                     "station_id": 1,
-                    "vehicle_type": Vehicle_type.scooter,
-                    "status": Vehicle_status.available,
+                    "vehicle_type": VehicleType.scooter,
+                    "status": VehicleStatus.available,
                     "rides_since_last_treated": 7,
                     "last_treated_date": date(2025, 1, 2)
                 }
@@ -157,8 +157,8 @@ async def test_treat_vehicle_success():
             mock_treat.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
-                "vehicle_type": Vehicle_type.bike,
-                "status": Vehicle_status.available,
+                "vehicle_type": VehicleType.bike,
+                "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
                 "last_treated_date": date.today()
             }
@@ -183,8 +183,8 @@ async def test_treat_vehicle_with_station():
             mock_treat.return_value = {
                 "vehicle_id": "V004",
                 "station_id": 3,
-                "vehicle_type": Vehicle_type.bike,
-                "status": Vehicle_status.available,
+                "vehicle_type": VehicleType.bike,
+                "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
                 "last_treated_date": date.today()
             }
@@ -225,8 +225,8 @@ async def test_report_degraded_success():
             mock_report.return_value = {
                 "vehicle_id": "V010",
                 "station_id": 1,
-                "vehicle_type": Vehicle_type.bike,
-                "status": Vehicle_status.degraded,
+                "vehicle_type": VehicleType.bike,
+                "status": VehicleStatus.degraded,
                 "rides_since_last_treated": 3,
                 "last_treated_date": date(2025, 1, 1)
             }

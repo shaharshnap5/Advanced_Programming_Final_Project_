@@ -4,6 +4,12 @@ import pytest
 import pytest_asyncio
 import aiosqlite
 from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from db.schema import CREATE_SQL
 
 
 @pytest_asyncio.fixture
@@ -13,32 +19,8 @@ async def test_db():
     db.row_factory = aiosqlite.Row
     
     # Create schema
-    await db.executescript("""
-        CREATE TABLE stations (
-          station_id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL,
-          lat REAL NOT NULL,
-          lon REAL NOT NULL,
-          max_capacity INTEGER NOT NULL
-        );
-        
-        CREATE TABLE vehicles (
-          vehicle_id TEXT PRIMARY KEY,
-          station_id INTEGER,
-          vehicle_type TEXT NOT NULL,
-          status TEXT NOT NULL,
-          rides_since_last_treated INTEGER NOT NULL,
-          last_treated_date TEXT,
-          FOREIGN KEY(station_id) REFERENCES stations(station_id)
-        );
+    await db.executescript(CREATE_SQL)
 
-        CREATE TABLE users (
-          user_id TEXT PRIMARY KEY,
-          payment_token TEXT NOT NULL,
-          current_ride_id TEXT
-        );
-    """)
-    
     # Seed test data
     await db.execute(
         "INSERT INTO stations (station_id, name, lat, lon, max_capacity) VALUES (?, ?, ?, ?, ?)",

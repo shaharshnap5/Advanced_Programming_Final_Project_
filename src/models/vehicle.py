@@ -3,12 +3,12 @@ from pydantic import BaseModel
 import datetime
 from enum import Enum
 
-class Vehicle_type(str, Enum):
+class VehicleType(str, Enum):
     bike = 'bike'
     ebike = 'ebike'
     scooter = 'scooter'
 
-class Vehicle_status(str, Enum):
+class VehicleStatus(str, Enum):
     available = 'available'
     rented = 'rented'
     degraded = 'degraded'
@@ -17,8 +17,8 @@ class Vehicle_status(str, Enum):
 class Vehicle(BaseModel):
     vehicle_id: str
     station_id: int | None
-    vehicle_type: Vehicle_type
-    status: Vehicle_status
+    vehicle_type: VehicleType
+    status: VehicleStatus
     rides_since_last_treated: int
     last_treated_date: datetime.date | None
 
@@ -36,12 +36,12 @@ class Vehicle(BaseModel):
         self.station_id = station_id
         if self.rides_since_last_treated > 10:
             # once the ride count exceeds 10, vehicle becomes degraded
-            self.status = Vehicle_status.degraded
+            self.status = VehicleStatus.degraded
         else:
-            self.status = Vehicle_status.available
+            self.status = VehicleStatus.available
 
     def report_degraded(self):
-        self.status = Vehicle_status.degraded
+        self.status = VehicleStatus.degraded
 
 
     def treat(self):
@@ -56,7 +56,7 @@ class ElectricVehicle(Vehicle):
     def treat(self):
         """Treats the electric vehicle by resetting its status, rides count, last treated date, and recharging the battery."""
 
-        self.status = Vehicle_status.available
+        self.status = VehicleStatus.available
         self.rides_since_last_treated = 0
         self.last_treated_date = datetime.date.today()
         self.battery_level = 100 # Recharge battery during treatment
@@ -66,8 +66,8 @@ class ElectricVehicle(Vehicle):
         """Rents the electric vehicle if it's available, within ride threshold, and has sufficient battery."""
 
         # eligibility: must be available, <=10 rides since last treatment, battery >20%
-        if self.status == Vehicle_status.available and self.rides_since_last_treated <= 10 and self.battery_level > 20:
-            self.status = Vehicle_status.rented
+        if self.status == VehicleStatus.available and self.rides_since_last_treated <= 10 and self.battery_level > 20:
+            self.status = VehicleStatus.rented
             self.station_id = None
         else:
             raise Exception("Electric vehicle is not available for rent")
@@ -75,7 +75,7 @@ class ElectricVehicle(Vehicle):
     def charge(self):
         """Charges the electric vehicle's battery to full if it's available."""
 
-        if self.status == Vehicle_status.available:
+        if self.status == VehicleStatus.available:
             self.battery_level = 100
         else:
             raise Exception("Cannot charge a vehicle that is not available")
@@ -83,14 +83,14 @@ class ElectricVehicle(Vehicle):
 
 
 class Bicycle(Vehicle):
-    vehicle_type: Vehicle_type = Vehicle_type.bike
+    vehicle_type: VehicleType = VehicleType.bike
 
     def rent(self):
         """Rents the bicycle if it's available and within the eligibility rules."""
 
         # a bike can be rented only when status is available and rides_since_last_treated <= 10
-        if self.status == Vehicle_status.available and self.rides_since_last_treated <= 10:
-            self.status = Vehicle_status.rented
+        if self.status == VehicleStatus.available and self.rides_since_last_treated <= 10:
+            self.status = VehicleStatus.rented
             self.station_id = None
         else:
             raise Exception("Bike is not available for rent")
@@ -98,13 +98,13 @@ class Bicycle(Vehicle):
     def treat(self):
         """Treats the bicycle by resetting its status, rides count, and last treated date."""
 
-        self.status = Vehicle_status.available
+        self.status = VehicleStatus.available
         self.rides_since_last_treated = 0
         self.last_treated_date = datetime.date.today()
 
 
 class ElectricBicycle(ElectricVehicle):
-    vehicle_type: Vehicle_type = Vehicle_type.ebike
+    vehicle_type: VehicleType = VehicleType.ebike
     battery_level: int = 100
 
     # The rent and treat methods are inherited from ElectricVehicle, \n
@@ -113,7 +113,7 @@ class ElectricBicycle(ElectricVehicle):
 
 
 class Scooter(ElectricVehicle):
-    vehicle_type: Vehicle_type = Vehicle_type.scooter
+    vehicle_type: VehicleType = VehicleType.scooter
     battery_level: int = 100
 
     # The rent and treat methods are inherited from ElectricVehicle, \n
@@ -126,15 +126,15 @@ class VehicleFactory:
         base_data = {
             "vehicle_id": vehicle_id,
             "station_id": station_id,
-            "status": Vehicle_status.available,
+            "status": VehicleStatus.available,
             "rides_since_last_treated": 0,
             "last_treated_date": None
         }
 
         v_type = {
-            "bike": Bicycle(vehicle_type=Vehicle_type.bike, **base_data),
-            "ebike": ElectricBicycle(vehicle_type=Vehicle_type.ebike, **base_data),
-            "scooter": Scooter(vehicle_type=Vehicle_type.scooter, **base_data)
+            "bike": Bicycle(vehicle_type=VehicleType.bike, **base_data),
+            "ebike": ElectricBicycle(vehicle_type=VehicleType.ebike, **base_data),
+            "scooter": Scooter(vehicle_type=VehicleType.scooter, **base_data)
         }
         return v_type[vehicle_type.lower()]
 
