@@ -20,7 +20,13 @@ macOS/Linux (bash/zsh):
 
 ### 2.5) Initialize the database
 
+Windows (PowerShell):
+
 `python .\scripts\init_db.py`
+
+macOS/Linux (bash/zsh):
+
+`python ./scripts/init_db.py`
 
 See [docs/DB_SETUP.md](docs/DB_SETUP.md) for full details.
 
