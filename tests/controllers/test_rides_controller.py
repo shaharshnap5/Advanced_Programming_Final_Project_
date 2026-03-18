@@ -154,8 +154,8 @@ async def test_start_ride_none_return():
         with pytest.raises(HTTPException) as exc_info:
             await start_ride(request, mock_db)
 
-        # The 404 HTTPException raised in the function is caught by outer handler, becoming 500
-        assert exc_info.value.status_code == 500
+        # 404 is correct when ride could not be started (not found)
+        assert exc_info.value.status_code == 404
         assert "Could not start ride" in exc_info.value.detail
 
 

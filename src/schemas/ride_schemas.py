@@ -6,8 +6,3 @@ class RideStartRequest(BaseModel):
     lon: float
     lat: float
 
-# class RideStartResponse(BaseModel):
-#     ride_id: str
-#     vehicle_id: str
-#     vehicle_type: VehicleType
-#     start_station_id: int
