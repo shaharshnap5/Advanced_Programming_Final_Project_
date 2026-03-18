@@ -3,7 +3,7 @@ from __future__ import annotations
 import aiosqlite
 
 from src.repositories.vehicles_repository import VehiclesRepository
-from src.models.vehicle import Vehicle
+from src.models.vehicle import Vehicle, VehicleStatus
 
 class VehiclesService:
     def __init__(self, repository: VehiclesRepository | None = None) -> None:
@@ -24,10 +24,10 @@ class VehiclesService:
         if not vehicle:
             raise ValueError(f"Vehicle {vehicle_id} not found")
 
-        if vehicle.status == "degraded":
+        if vehicle.status == VehicleStatus.degraded:
             return vehicle
 
-        success = await self._repository.update_vehicle_status(db, vehicle_id, "degraded")
+        success = await self._repository.update_vehicle_status(db, vehicle_id, VehicleStatus.degraded.value)
         if not success:
             raise Exception(f"Failed to report vehicle {vehicle_id} as degraded")
 
@@ -50,7 +50,7 @@ class VehiclesService:
             raise ValueError(f"Vehicle {vehicle_id} not found")
 
         # Check eligibility for treatment
-        is_degraded = vehicle.status == "degraded"
+        is_degraded = vehicle.status == VehicleStatus.degraded
         rides_threshold_met = vehicle.rides_since_last_treated >= 7
 
         if not (is_degraded or rides_threshold_met):

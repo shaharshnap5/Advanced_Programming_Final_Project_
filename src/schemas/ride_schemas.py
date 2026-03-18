@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from src.models.vehicle import VehicleType
 
 
 class RideStartRequest(BaseModel):

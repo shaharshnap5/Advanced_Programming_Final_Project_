@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from datetime import datetime
 
 from src.models.ride import Ride
-#from src.schemas.ride_schemas import RideStartResponse
 from src.services.stations_service import StationsService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository

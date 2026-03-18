@@ -7,7 +7,7 @@ from pydantic import BaseModel, ValidationError, Field
 from aiosqlite import Connection
 
 from src.db import get_db
-from src.models.user import UserCreate
+from src.models.user import UserCreate, User
 from src.services.users_service import UsersService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -15,7 +15,10 @@ service = UsersService()
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def create_user(request: Request) -> dict[str, str]:
+async def create_user(
+    request: Request,
+    db: Connection = Depends(get_db)
+) -> User:
     """Register a new user and return the generated user_id."""
     try:
         payload = await request.json()

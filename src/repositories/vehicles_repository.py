@@ -116,7 +116,7 @@ class VehiclesRepository:
         await cursor.close()
         return affected > 0
 
-    async def get_available_vehicle(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle] | None:
+    async def get_available_vehicle(self, db: aiosqlite.Connection, station_id: int) -> Vehicle | None:
         """Finds one available vehicle at the given station."""
         cursor = await db.execute(
             """
