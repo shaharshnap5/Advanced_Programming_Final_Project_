@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 import aiosqlite
 
+from src.models.user import User
 from src.repositories.users_repository import UsersRepository
 from src.models.user import User
 

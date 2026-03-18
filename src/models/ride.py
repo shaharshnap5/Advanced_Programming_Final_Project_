@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from .user import User
-from .vehicle import Vehicle, VehicleType
+from .vehicle import Vehicle
 
 
 
@@ -35,6 +35,3 @@ def process_end_of_ride(user: User, ride: Ride):
 
     # 3. Clear the user's active ride
     user.current_ride_id = None
-
-
-

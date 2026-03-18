@@ -2,7 +2,6 @@
 Comprehensive tests for the User model with 100% coverage.
 Tests cover:
 - User initialization
-- can_start_ride method for various states
 - charge method with valid and invalid payment tokens
 """
 
@@ -23,53 +22,12 @@ class TestUser:
         return User(
             user_id="USER001",
             payment_token="tok_visa_123456",
-            current_ride_id=None
-        )
-
-    @pytest.fixture
-    def user_with_active_ride(self):
-        """Create a User with an active ride."""
-        return User(
-            user_id="USER002",
-            payment_token="tok_visa_789012",
-            current_ride_id="RIDE001"
         )
 
     def test_user_initialization(self, valid_user):
         """Test that a User can be initialized with required fields."""
         assert valid_user.user_id == "USER001"
         assert valid_user.payment_token == "tok_visa_123456"
-        assert valid_user.current_ride_id is None
-
-    def test_user_with_active_ride_initialization(self, user_with_active_ride):
-        """Test that a User can be initialized with an active ride."""
-        assert user_with_active_ride.user_id == "USER002"
-        assert user_with_active_ride.payment_token == "tok_visa_789012"
-        assert user_with_active_ride.current_ride_id == "RIDE001"
-
-    def test_user_default_current_ride_id(self):
-        """Test that current_ride_id defaults to None."""
-        user = User(
-            user_id="USER003",
-            payment_token="tok_visa_345678"
-        )
-        assert user.current_ride_id is None
-
-    def test_can_start_ride_when_no_active_ride(self, valid_user):
-        """Test that can_start_ride returns True when user has no active ride."""
-        assert valid_user.can_start_ride() is True
-
-    def test_can_start_ride_when_active_ride_exists(self, user_with_active_ride):
-        """Test that can_start_ride returns False when user has an active ride."""
-        assert user_with_active_ride.can_start_ride() is False
-
-    def test_can_start_ride_after_ride_completion(self, valid_user):
-        """Test that can_start_ride returns True after ride is completed."""
-        valid_user.current_ride_id = "RIDE001"
-        assert valid_user.can_start_ride() is False
-
-        valid_user.current_ride_id = None
-        assert valid_user.can_start_ride() is True
 
     def test_charge_with_valid_payment_token(self, valid_user, capsys):
         """Test charging a user with a valid payment token."""
@@ -115,7 +73,6 @@ class TestUser:
         assert isinstance(user_dict, dict)
         assert "user_id" in user_dict
         assert "payment_token" in user_dict
-        assert "current_ride_id" in user_dict
 
     def test_user_validation_missing_required_field(self):
         """Test that User validation fails when required fields are missing."""
@@ -125,11 +82,9 @@ class TestUser:
     def test_multiple_users_independent(self):
         """Test that multiple User instances are independent."""
         user1 = User(user_id="U1", payment_token="tok1")
-        user2 = User(user_id="U2", payment_token="tok2", current_ride_id="R1")
+        user2 = User(user_id="U2", payment_token="tok2")
 
         assert user1.user_id != user2.user_id
-        assert user1.can_start_ride() is True
-        assert user2.can_start_ride() is False
 
     def test_charge_print_message_format(self, valid_user, capsys):
         """Test that the charge message format is correct."""

@@ -1,25 +1,22 @@
 from __future__ import annotations
 
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import ValidationError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError, Field
 from aiosqlite import Connection
 
 from src.db import get_db
+from src.models.user import UserCreate
 from src.services.users_service import UsersService
-from src.models.user import User
-
-
-class UserCreate(BaseModel):
-    user_id: str = Field(..., min_length=1, description="Unique identifier for the user")
-
 
 router = APIRouter(prefix="/users", tags=["users"])
 service = UsersService()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=User)
-async def create_user(request: Request, db: Connection = Depends(get_db)) -> User:
-    """Register a new user and return the created user model."""
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def create_user(request: Request) -> dict[str, str]:
+    """Register a new user and return the generated user_id."""
     try:
         payload = await request.json()
     except Exception as e:  # pragma: no cover

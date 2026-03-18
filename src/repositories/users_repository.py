@@ -3,6 +3,8 @@ from __future__ import annotations
 import aiosqlite
 from src.models.user import User
 
+from src.models.user import User
+
 
 class UsersRepository:
     async def get_by_id(self, db: aiosqlite.Connection, user_id: str) -> User | None:
@@ -23,14 +25,13 @@ class UsersRepository:
         db: aiosqlite.Connection,
         user_id: str,
         payment_token: str,
-        current_ride_id: str | None = None,
     ) -> bool:
         cursor = await db.execute(
             """
-            INSERT OR IGNORE INTO users (user_id, payment_token, current_ride_id)
-            VALUES (?, ?, ?)
+            INSERT OR IGNORE INTO users (user_id, payment_token)
+            VALUES (?, ?)
             """,
-            (user_id, payment_token, current_ride_id),
+            (user_id, payment_token),
         )
         await db.commit()
         affected = cursor.rowcount

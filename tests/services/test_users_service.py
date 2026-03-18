@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
+from src.models.user import User
 from src.services.users_service import UsersService
 from src.repositories.users_repository import UsersRepository
-from src.models.user import User
 
 
 @pytest.mark.asyncio
@@ -31,7 +31,7 @@ async def test_create_user_success():
 @pytest.mark.asyncio
 async def test_create_user_conflict():
     mock_repo = Mock(spec=UsersRepository)
-    mock_repo.get_by_id = AsyncMock(return_value={"user_id": "USER001"})
+    mock_repo.get_by_id = AsyncMock(return_value=User(user_id="USER001", payment_token="mocked_token"))
 
     service = UsersService(repository=mock_repo)
     mock_db = Mock()

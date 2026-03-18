@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.repositories.users_repository import UsersRepository
 from src.models.user import User
+from src.repositories.users_repository import UsersRepository
 
 
 @pytest.mark.asyncio
