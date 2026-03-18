@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 import aiosqlite
 
-from src.schemas.ride_schemas import RideStartRequest
+from src.schemas.ride_schemas import RideStartRequest, EndRidePayload
 from src.models.ride import Ride
 from src.services.rides_service import RideService
 
@@ -40,4 +40,38 @@ async def start_ride(
         raise e
     except Exception as e:
         # Catch any unexpected crashes
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/end")
+async def end_ride(
+    payload: EndRidePayload,
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    """
+    End an active ride and dock the vehicle at the nearest station with available capacity.
+    
+    Request body:
+    - ride_id: str - The unique identifier of the ride to end
+    - lon: float - The longitude of the drop-off location
+    - lat: float - The latitude of the drop-off location
+    
+    Returns:
+    - end_station_id: int - The ID of the station where vehicle was docked
+    - payment_charged: int - The amount charged (15 ILS for normal ride, 0 for degraded)
+    - active_users: list[str] - List of user IDs still in active rides
+    """
+    try:
+        # Validate payload
+        if not payload.ride_id or payload.lon is None or payload.lat is None:
+            raise HTTPException(status_code=400, detail="Missing required fields: ride_id, lon, lat")
+        
+        result = await service.end_ride(db, payload.ride_id, payload.lon, payload.lat)
+        return result
+        
+    except HTTPException as e:
+        raise e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
