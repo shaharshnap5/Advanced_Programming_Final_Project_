@@ -21,7 +21,7 @@ class RideService:
 
     async def start_new_ride(
             self, db: aiosqlite.Connection, user_id: str, lon: float, lat: float
-    ):
+    ) -> Ride:
         # 1. Find the nearest station THAT ACTUALLY HAS VEHICLES
         nearest_station = await self.stations_service.get_nearest_station_with_vehicles(db, lon=lon, lat=lat)
 
@@ -54,7 +54,8 @@ class RideService:
         # 4. Generate a unique ID for the new ride
         new_ride_id = str(uuid.uuid4())
 
-        # 5. Save the state to the database (Persist the data)
+        # 5. Capture the ride start time once and persist the state to the database
+        start_time = datetime.now()
         # 👇 FIX 2: Bracket notation for the database calls 👇
         await self.vehicles_repo.mark_vehicle_as_rented(db, picked_vehicle.vehicle_id)
         await self.rides_repo.create_active_ride(
@@ -63,15 +64,15 @@ class RideService:
             user_id,
             picked_vehicle.vehicle_id,
             station_id,
-            datetime.now()
+            start_time,
         )
 
         # 6. Return the exact JSON shape
-        # 👇 FIX 3: Use datetime.now() instead of the database dictionary for the start_time 👇
+        # 👇 FIX 3: Use the captured start_time instead of calling datetime.now() again 👇
         return Ride(
             ride_id=new_ride_id,
             user_id=user_id,
             vehicle_id=picked_vehicle.vehicle_id,
-            start_time=datetime.now(),
+            start_time=start_time,
             start_station_id=station_id
         )
