@@ -324,6 +324,5 @@ print(f"Active Users: {data['active_users']}")
 
 For issues or questions:
 1. Check test files in `tests/` directory
-2. Review `IMPLEMENTATION_SUMMARY.md`
-3. See `TECHNICAL_DOCUMENTATION.md` for architecture details
-4. Check repository issues on GitHub
+2. See `TECHNICAL_DOCUMENTATION.md` for architecture details
+3. Check repository issues on GitHub

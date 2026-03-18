@@ -207,12 +207,12 @@ async def dock_vehicle(
     vehicle_id: str,
     station_id: int,
     rides_count: int,
-    status: str = "available"
+    status: VehicleStatus = VehicleStatus.available
 ) -> Vehicle | None:
     """Dock a vehicle at a station after ride ends."""
     
     # Mark as degraded if rides > 10
-    final_status = "degraded" if rides_count > 10 else status
+    final_status = VehicleStatus.degraded if rides_count > 10 else status
     
     cursor = await db.execute(
         """
@@ -235,7 +235,7 @@ async def dock_vehicle(
 
 **Features**:
 - Increments ride counter
-- Sets status based on ride count threshold
+- Sets status based on ride count threshold (uses VehicleStatus enum)
 - Commits to database immediately
 - Returns updated Vehicle object
 
