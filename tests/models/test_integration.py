@@ -43,8 +43,20 @@ class TestCompleteFleetIntegration:
         fm.stations[2] = station2
 
         # Create users
-        user1 = User(user_id="USER001", payment_token="tok_visa_001")
-        user2 = User(user_id="USER002", payment_token="tok_visa_002")
+        user1 = User(
+            user_id="USER001",
+            first_name="User",
+            last_name="One",
+            email="user001@example.com",
+            payment_token="tok_visa_001",
+        )
+        user2 = User(
+            user_id="USER002",
+            first_name="User",
+            last_name="Two",
+            email="user002@example.com",
+            payment_token="tok_visa_002",
+        )
 
         fm.users["USER001"] = user1
         fm.users["USER002"] = user2
@@ -131,7 +143,6 @@ class TestCompleteFleetIntegration:
 
         # Process end of ride and charge user
         process_end_of_ride(user, ride)
-        assert user.current_ride_id is None
 
     def test_multiple_users_multiple_vehicles(self, fleet_system):
         """Test multiple users renting different vehicles simultaneously."""
@@ -144,13 +155,11 @@ class TestCompleteFleetIntegration:
         station1 = fleet_system['station1']
 
         # User 1 rents bike
-        user1.current_ride_id = "RIDE001"
         bike.rent()
         station1.remove_vehicle("BIKE001")
         assert bike.status == VehicleStatus.rented
 
         # User 2 rents ebike
-        user2.current_ride_id = "RIDE002"
         ebike.rent()
         station1.remove_vehicle("EBIKE001")
         assert ebike.status == VehicleStatus.rented
@@ -295,15 +304,9 @@ class TestCompleteFleetIntegration:
         assert degraded_ride.calculate_cost() == 0
 
         # User should be charged correctly
-        initial_state = user.current_ride_id
-
-        user.current_ride_id = "RIDE_NORMAL"
         process_end_of_ride(user, normal_ride)
-        assert user.current_ride_id is None
 
-        user.current_ride_id = "RIDE_DEGRADED"
         process_end_of_ride(user, degraded_ride)
-        assert user.current_ride_id is None
 
     def test_station_with_distance_functionality(self, fleet_system):
         """Test StationWithDistance for nearest station queries."""
@@ -360,8 +363,7 @@ class TestCompleteFleetIntegration:
         assert 2 in fm.stations
 
         # 3. Select vehicle and start ride
-        user.current_ride_id = "TRIP001"
-        assert user.can_start_ride() is False
+        assert user.can_start_ride() is True
 
         bike.rent()
         assert bike.status == VehicleStatus.rented
@@ -369,7 +371,6 @@ class TestCompleteFleetIntegration:
 
         # 4. Ride in progress
         assert bike.status == VehicleStatus.rented
-        assert user.current_ride_id == "TRIP001"
 
         # 5. End ride at different station
         bike.return_vehicle(2)
@@ -385,7 +386,6 @@ class TestCompleteFleetIntegration:
         process_end_of_ride(user, ride)
 
         # 7. Verify final state
-        assert user.current_ride_id is None
         assert bike.status == VehicleStatus.available
         assert bike.station_id == 2
         assert "BIKE001" in station2.vehicles
@@ -424,13 +424,25 @@ class TestErrorHandlingIntegration:
             station.add_vehicle("V002")
 
         # Invalid user charging
-        user = User(user_id="INVALID", payment_token="")
+        user = User(
+            user_id="INVALID",
+            first_name="Invalid",
+            last_name="User",
+            email="invalid.user@example.com",
+            payment_token="",
+        )
         with pytest.raises(ValueError):
             user.charge(15)
 
     def test_state_consistency_across_operations(self):
         """Test that state remains consistent across multiple operations."""
-        user = User(user_id="CONSISTENCY_TEST", payment_token="tok_123")
+        user = User(
+            user_id="CONSISTENCY_TEST",
+            first_name="Consistency",
+            last_name="User",
+            email="consistency.user@example.com",
+            payment_token="tok_123",
+        )
         station = Station(
             station_id=1,
             name="Consistency Station",
@@ -455,11 +467,7 @@ class TestErrorHandlingIntegration:
         station.add_vehicle("V0")
         assert len(station.vehicles) == 3
 
-        # User ride state
-        assert user.can_start_ride() is True
-        user.current_ride_id = "R1"
-        assert user.can_start_ride() is False
-        user.current_ride_id = None
+        # User remains stateless regarding active rides
         assert user.can_start_ride() is True
 
 
@@ -495,8 +503,20 @@ class TestCompleteFleetIntegration:
         fm.stations[2] = station2
 
         # Create users
-        user1 = User(user_id="USER001", payment_token="tok_visa_001")
-        user2 = User(user_id="USER002", payment_token="tok_visa_002")
+        user1 = User(
+            user_id="USER001",
+            first_name="User",
+            last_name="One",
+            email="user001@example.com",
+            payment_token="tok_visa_001",
+        )
+        user2 = User(
+            user_id="USER002",
+            first_name="User",
+            last_name="Two",
+            email="user002@example.com",
+            payment_token="tok_visa_002",
+        )
 
         fm.users["USER001"] = user1
         fm.users["USER002"] = user2
@@ -746,15 +766,9 @@ class TestCompleteFleetIntegration:
         assert degraded_ride.calculate_cost() == 0
 
         # User should be charged correctly
-        initial_state = user.current_ride_id
-
-        user.current_ride_id = "RIDE_NORMAL"
         process_end_of_ride(user, normal_ride)
-        assert user.current_ride_id is None
 
-        user.current_ride_id = "RIDE_DEGRADED"
         process_end_of_ride(user, degraded_ride)
-        assert user.current_ride_id is None
 
     def test_station_with_distance_functionality(self, fleet_system):
         """Test StationWithDistance for nearest station queries."""
@@ -811,8 +825,7 @@ class TestCompleteFleetIntegration:
         assert 2 in fm.stations
 
         # 3. Select vehicle and start ride
-        user.current_ride_id = "TRIP001"
-        assert user.can_start_ride() is False
+        assert user.can_start_ride() is True
 
         bike.rent()
         assert bike.status == "rented"
@@ -820,7 +833,6 @@ class TestCompleteFleetIntegration:
 
         # 4. Ride in progress
         assert bike.status == "rented"
-        assert user.current_ride_id == "TRIP001"
 
         # 5. End ride at different station
         bike.return_vehicle(2)
@@ -838,7 +850,6 @@ class TestCompleteFleetIntegration:
         process_end_of_ride(user, ride)
 
         # 7. Verify final state
-        assert user.current_ride_id is None
         assert bike.status == "available"
         assert bike.station_id == 2
         assert "BIKE001" in station2.vehicles
@@ -877,13 +888,25 @@ class TestErrorHandlingIntegration:
             station.add_vehicle("V002")
 
         # Invalid user charging
-        user = User(user_id="INVALID", payment_token="")
+        user = User(
+            user_id="INVALID",
+            first_name="Invalid",
+            last_name="User",
+            email="invalid.user@example.com",
+            payment_token="",
+        )
         with pytest.raises(ValueError):
             user.charge(15)
 
     def test_state_consistency_across_operations(self):
         """Test that state remains consistent across multiple operations."""
-        user = User(user_id="CONSISTENCY_TEST", payment_token="tok_123")
+        user = User(
+            user_id="CONSISTENCY_TEST",
+            first_name="Consistency",
+            last_name="User",
+            email="consistency.user@example.com",
+            payment_token="tok_123",
+        )
         station = Station(
             station_id=1,
             name="Consistency Station",
@@ -908,10 +931,6 @@ class TestErrorHandlingIntegration:
         station.add_vehicle("V0")
         assert len(station.vehicles) == 3
 
-        # User ride state
-        assert user.can_start_ride() is True
-        user.current_ride_id = "R1"
-        assert user.can_start_ride() is False
-        user.current_ride_id = None
+        # User remains stateless regarding active rides
         assert user.can_start_ride() is True
 

@@ -284,31 +284,27 @@ class TestProcessEndOfRide:
         assert calls[1][0][0] == 0
 
     def test_process_end_of_ride_order_of_operations(self, mock_user, normal_ride):
-        """Test that operations happen in the correct order: calculate -> charge -> clear."""
+        """Test that operations happen in the correct order: calculate -> charge."""
         call_order = []
 
         def track_charge(amount):
             call_order.append(('charge', amount))
 
         mock_user.charge = Mock(side_effect=track_charge)
-        mock_user.current_ride_id = "RIDE001"
 
         process_end_of_ride(mock_user, normal_ride)
 
         assert ('charge', 15) in call_order
-        assert mock_user.current_ride_id is None
 
     def test_process_end_of_ride_preserves_user_data(self, mock_user, normal_ride):
         """Test that process_end_of_ride doesn't modify other user attributes."""
         mock_user.user_id = "USER001"
         mock_user.payment_token = "TOKEN123"
-        mock_user.current_ride_id = "RIDE001"
 
         process_end_of_ride(mock_user, normal_ride)
 
         assert mock_user.user_id == "USER001"
         assert mock_user.payment_token == "TOKEN123"
-        assert mock_user.current_ride_id is None
 
     def test_process_end_of_ride_with_different_ride_ids(self, mock_user):
         """Test processing rides with different IDs."""
@@ -320,10 +316,8 @@ class TestProcessEndOfRide:
         ]
 
         for ride in rides:
-            mock_user.current_ride_id = ride.ride_id
             process_end_of_ride(mock_user, ride)
 
-        assert mock_user.current_ride_id is None
         assert mock_user.charge.call_count == 3
 
     def test_process_end_of_ride_charge_amount_accuracy(self, mock_user):
@@ -337,7 +331,6 @@ class TestProcessEndOfRide:
             is_degraded_report=True
         )
 
-        mock_user.current_ride_id = "DEGRADED"
         process_end_of_ride(mock_user, degraded_ride)
 
         # Verify exact charge amount for degraded ride
@@ -355,8 +348,6 @@ class TestProcessEndOfRide:
             is_degraded_report=False
         )
 
-        mock_user.current_ride_id = "COMPLETE"
         process_end_of_ride(mock_user, ride)
 
         mock_user.charge.assert_called_once_with(15)
-        assert mock_user.current_ride_id is None
