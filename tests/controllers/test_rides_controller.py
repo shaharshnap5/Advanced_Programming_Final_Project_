@@ -56,17 +56,18 @@ async def test_start_ride_no_vehicles_available():
     mock_db = Mock()
 
     with patch('src.controllers.ride_controller.service') as mock_service:
-        # HTTPException is caught by the outer Exception handler, so it becomes 500
+        # Service raises HTTPException(404) when no vehicles are available
         mock_service.start_new_ride = AsyncMock(
             side_effect=HTTPException(status_code=404, detail="Could not start ride.")
         )
 
-        # The HTTPException gets caught and re-raised as 500
+        # The controller should propagate the HTTPException unchanged
         with pytest.raises(HTTPException) as exc_info:
             await start_ride(request, mock_db)
 
-        # HTTPException is caught by outer Exception handler, so status becomes 500
-        assert exc_info.value.status_code == 500
+        # Expect the original 404 status and detail from the service
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Could not start ride."
 
 
 @pytest.mark.asyncio
