@@ -35,6 +35,9 @@ async def start_ride(
     except ValueError as e:
         # Catch any specific business logic errors you raise in the service
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException as e:
+        # Re-raise HTTPExceptions so their original status codes and details are preserved
+        raise e
     except Exception as e:
         # Catch any unexpected crashes
         raise HTTPException(status_code=500, detail=str(e))
