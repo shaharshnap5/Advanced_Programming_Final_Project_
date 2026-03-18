@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -10,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = PROJECT_ROOT / "data" / "app.db"
 
 
-@asynccontextmanager
+
 async def get_db() -> AsyncIterator[aiosqlite.Connection]:
     db = await aiosqlite.connect(DB_PATH)
     db.row_factory = aiosqlite.Row

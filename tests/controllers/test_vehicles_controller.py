@@ -31,7 +31,7 @@ async def test_get_vehicle_success():
             assert response.status_code == 200
             data = response.json()
             assert data["vehicle_id"] == "V001"
-            assert data["vehicle_type"] == "bike"
+            assert data["vehicle_type"] == "bicycle"
 
 
 @pytest.mark.asyncio

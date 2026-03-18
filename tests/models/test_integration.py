@@ -4,7 +4,7 @@ Tests that verify all models work together correctly.
 """
 
 import pytest
-from datetime import date
+from datetime import date, datetime
 from src.models.FleetManager import FleetManager
 from src.models.station import Station, StationWithDistance
 from src.models.user import User
@@ -115,6 +115,8 @@ class TestCompleteFleetIntegration:
             ride_id="RIDE001",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=False
         )
 
@@ -275,6 +277,8 @@ class TestCompleteFleetIntegration:
             ride_id="RIDE_NORMAL",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=False
         )
         assert normal_ride.calculate_cost() == 15
@@ -284,6 +288,8 @@ class TestCompleteFleetIntegration:
             ride_id="RIDE_DEGRADED",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=True
         )
         assert degraded_ride.calculate_cost() == 0
@@ -499,16 +505,16 @@ class TestCompleteFleetIntegration:
         bike = Bicycle(
             vehicle_id="BIKE001",
             station_id=1,
-            vehicle_type="bike",
-            status="available",
+            vehicle_type=VehicleType.bike,
+            status=VehicleStatus.available,
             rides_since_last_treated=3,
             last_treated_date=date.today()
         )
         ebike = ElectricBicycle(
             vehicle_id="EBIKE001",
             station_id=1,
-            vehicle_type="ebike",
-            status="available",
+            vehicle_type=VehicleType.ebike,
+            status=VehicleStatus.available,
             rides_since_last_treated=2,
             last_treated_date=date.today(),
             battery_level=100
@@ -516,8 +522,8 @@ class TestCompleteFleetIntegration:
         scooter = Scooter(
             vehicle_id="SCOOTER001",
             station_id=1,
-            vehicle_type="scooter",
-            status="available",
+            vehicle_type=VehicleType.scooter,
+            status=VehicleStatus.available,
             rides_since_last_treated=4,
             last_treated_date=date.today(),
             battery_level=80
@@ -561,6 +567,8 @@ class TestCompleteFleetIntegration:
             ride_id="RIDE001",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=False
         )
 
@@ -688,7 +696,9 @@ class TestCompleteFleetIntegration:
         ride = Ride(
             ride_id="RIDE001",
             user_id="USER001",
-            vehicle_id="BIKE001"
+            vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now()
         )
         fm.active_rides["RIDE001"] = ride
 
@@ -718,6 +728,8 @@ class TestCompleteFleetIntegration:
             ride_id="RIDE_NORMAL",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=False
         )
         assert normal_ride.calculate_cost() == 15
@@ -727,6 +739,8 @@ class TestCompleteFleetIntegration:
             ride_id="RIDE_DEGRADED",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=True
         )
         assert degraded_ride.calculate_cost() == 0
@@ -817,6 +831,8 @@ class TestCompleteFleetIntegration:
             ride_id="TRIP001",
             user_id="USER001",
             vehicle_id="BIKE001",
+            start_station_id=1,
+            start_time=datetime.now(),
             is_degraded_report=False
         )
         process_end_of_ride(user, ride)
@@ -837,8 +853,8 @@ class TestErrorHandlingIntegration:
         bike = Bicycle(
             vehicle_id="BIKE_ERR",
             station_id=1,
-            vehicle_type="bike",
-            status="degraded",
+            vehicle_type=VehicleType.bike,
+            status=VehicleStatus.degraded,
             rides_since_last_treated=0,
             last_treated_date=date.today()
         )

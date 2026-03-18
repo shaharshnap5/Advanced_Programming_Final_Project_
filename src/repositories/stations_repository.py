@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import aiosqlite
+from src.models.station import Station, StationWithDistance
 
 
 class StationsRepository:
-    async def get_by_id(self, db: aiosqlite.Connection, station_id: int) -> dict | None:
+    async def get_by_id(self, db: aiosqlite.Connection, station_id: int) -> Station | None:
         cursor = await db.execute(
             """
             SELECT station_id, name, lat, lon, max_capacity
@@ -15,9 +16,9 @@ class StationsRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return dict(row) if row else None
+        return Station(**dict(row)) if row else None
 
-    async def get_nearest(self, db: aiosqlite.Connection, lon: float, lat: float) -> dict | None:
+    async def get_nearest(self, db: aiosqlite.Connection, lon: float, lat: float) -> StationWithDistance | None:
         cursor = await db.execute(
             """
             SELECT
@@ -35,4 +36,20 @@ class StationsRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return dict(row) if row else None
+        if row:
+            row_dict = dict(row)
+            return StationWithDistance(**row_dict)
+        return None
+
+    async def get_stations_with_available_vehicles(self, db: aiosqlite.Connection) -> list[Station]:
+        # The JOIN ensures we only get stations that have at least one 'available' vehicle
+        query = """
+            SELECT DISTINCT s.station_id, s.name, s.lat, s.lon, s.max_capacity 
+            FROM stations s
+            JOIN vehicles v ON s.station_id = v.station_id
+            WHERE v.status = 'available'
+        """
+        db.row_factory = aiosqlite.Row
+        async with db.execute(query) as cursor:
+            rows = await cursor.fetchall()
+            return [Station(**dict(row)) for row in rows]

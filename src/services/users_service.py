@@ -5,6 +5,7 @@ import aiosqlite
 
 from src.models.user import User
 from src.repositories.users_repository import UsersRepository
+from src.models.user import User
 
 
 class UsersService:
@@ -13,6 +14,9 @@ class UsersService:
 
     async def create_user(self, db: aiosqlite.Connection, user_id: str) -> User:
         """Create a new user with a mocked payment token.
+
+        Returns:
+            User: The created user model
 
         Raises:
             ValueError: if the user already exists.

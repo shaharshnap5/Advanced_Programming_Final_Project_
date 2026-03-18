@@ -21,6 +21,7 @@ async def test_create_user_success():
         mock_uuid4.return_value = Mock(hex="mocked_token")
         result = await service.create_user(mock_db, "USER001")
 
+    assert isinstance(result, User)
     assert result.user_id == "USER001"
     assert result.payment_token == "mocked_token"
     mock_repo.get_by_id.assert_called_once_with(mock_db, "USER001")

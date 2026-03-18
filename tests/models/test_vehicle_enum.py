@@ -20,8 +20,8 @@ from src.models.vehicle import (
 
 def test_vehicle_type_enum_values():
     """Test Vehicle_type enum has correct values."""
-    assert VehicleType.bike.value == 'bike'
-    assert VehicleType.ebike.value == 'ebike'
+    assert VehicleType.bike.value == 'bicycle'
+    assert VehicleType.ebike.value == 'electric_bicycle'
     assert VehicleType.scooter.value == 'scooter'
 
 

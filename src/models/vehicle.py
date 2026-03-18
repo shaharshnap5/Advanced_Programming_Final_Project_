@@ -4,8 +4,8 @@ import datetime
 from enum import Enum
 
 class VehicleType(str, Enum):
-    bike = 'bike'
-    ebike = 'ebike'
+    bike = 'bicycle'
+    ebike = 'electric_bicycle'
     scooter = 'scooter'
 
 class VehicleStatus(str, Enum):
