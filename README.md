@@ -22,6 +22,10 @@ macOS/Linux (bash/zsh):
 
 `python .\scripts\init_db.py`
 
+Reset the database (drop all tables and recreate):
+
+`python .\scripts\init_db.py --reset-db`
+
 See [docs/DB_SETUP.md](docs/DB_SETUP.md) for full details.
 
 ### 3) Run the server
