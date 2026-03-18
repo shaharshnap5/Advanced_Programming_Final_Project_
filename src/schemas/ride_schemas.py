@@ -3,8 +3,8 @@ from pydantic import BaseModel
 
 class RideStartRequest(BaseModel):
     user_id: str
-    lon : float
-    lat : float
+    lon: float
+    lat: float
 
 # class RideStartResponse(BaseModel):
 #     ride_id: str
