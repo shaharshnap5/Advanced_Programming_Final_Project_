@@ -1,8 +1,11 @@
 import asyncio
+import csv
 from typing import Dict
+from datetime import datetime
 from .station import Station
 from .user import User
 from .ride import Ride
+from .vehicle import Vehicle, VehicleType, VehicleStatus
 
 
 class FleetManager:
@@ -36,7 +39,45 @@ class FleetManager:
     # 4. The Core Methods (Async)
     def load_data(self, stations_file: str, vehicles_file: str) -> None:
         """Loads CSV data and wires vehicles to stations using a Factory Method. [cite: 338, 404]"""
-        pass
+        # Load stations
+        with open(stations_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                station_id = int(row['station_id'])
+                station = Station(
+                    station_id=station_id,
+                    name=row['name'],
+                    lat=float(row['lat']),
+                    lon=float(row['lon']),
+                    max_capacity=int(row['max_capacity']),
+                    vehicles=[]
+                )
+                self.stations[station_id] = station
+        
+        # Load vehicles and wire them to stations
+        with open(vehicles_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                vehicle_id = row['vehicle_id']
+                station_id = int(row['station_id']) if row['station_id'] else None
+                vehicle_type = VehicleType(row['vehicle_type'])
+                status = VehicleStatus(row['status'])
+                rides_since_last_treated = int(row['rides_since_last_treated'])
+                last_treated_date = datetime.strptime(row['last_treated_date'], '%Y-%m-%d').date() if row['last_treated_date'] else None
+                
+                # Create vehicle (basic Vehicle for now, can be extended with Factory Method)
+                vehicle = Vehicle(
+                    vehicle_id=vehicle_id,
+                    station_id=station_id,
+                    vehicle_type=vehicle_type,
+                    status=status,
+                    rides_since_last_treated=rides_since_last_treated,
+                    last_treated_date=last_treated_date
+                )
+                
+                # Wire vehicle to station if it has a station_id
+                if station_id and station_id in self.stations:
+                    self.stations[station_id].vehicles.append(vehicle_id)
 
     async def register_user(self, name: str, credit_token: str) -> User:
         """Registers user & payment method. [cite: 104, 105, 339]"""
