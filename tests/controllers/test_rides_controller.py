@@ -165,18 +165,18 @@ async def test_start_ride_none_return():
 async def test_get_active_users_via_api():
     from httpx import AsyncClient, ASGITransport
 
-    with patch("src.controllers.rides_controller.get_db") as mock_get_db:
+    with patch("src.controllers.ride_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
-        with patch("src.controllers.rides_controller.service.list_active_users") as mock_list_active:
+        with patch("src.controllers.ride_controller.service.list_active_users") as mock_list_active:
             mock_list_active.return_value = [
                 User(user_id="USER_A", first_name="A", last_name="A", email="a@example.com", payment_token="tok1"),
                 User(user_id="USER_B", first_name="B", last_name="B", email="b@example.com", payment_token="tok2"),
             ]
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.get("/rides/active-users")
+                response = await client.get("/ride/active-users")
 
             assert response.status_code == 200
             assert response.json() == [
