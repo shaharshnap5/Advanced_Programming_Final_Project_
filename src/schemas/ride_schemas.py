@@ -6,3 +6,7 @@ class RideStartRequest(BaseModel):
     lon: float
     lat: float
 
+
+class ActiveUsersResponse(BaseModel):
+    active_user_ids: list[str]
+

@@ -175,6 +175,6 @@ async def test_get_active_users_via_api():
                 response = await client.get("/rides/active-users")
 
             assert response.status_code == 200
-            assert response.json() == ["USER_A", "USER_B"]
+            assert response.json() == {"active_user_ids": ["USER_A", "USER_B"]}
 
 
