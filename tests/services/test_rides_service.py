@@ -44,6 +44,7 @@ async def test_start_new_ride_success():
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
     mock_rides_repo.create_active_ride = AsyncMock()
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     # Create service with mocked dependencies
     service = RideService()
@@ -79,6 +80,7 @@ async def test_start_new_ride_no_available_station():
 
     # Station service returns None
     mock_stations_service.get_nearest_station_with_vehicles = AsyncMock(return_value=None)
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     service = RideService()
     service.stations_service = mock_stations_service
@@ -117,6 +119,7 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
     mock_rides_repo.create_active_ride = AsyncMock()
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     service = RideService()
     service.stations_service = mock_stations_service
@@ -153,6 +156,7 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
     mock_rides_repo.create_active_ride = AsyncMock()
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     service = RideService()
     service.stations_service = mock_stations_service
@@ -189,6 +193,7 @@ async def test_start_new_ride_vehicle_id_sorting():
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
     mock_rides_repo.create_active_ride = AsyncMock()
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     service = RideService()
     service.stations_service = mock_stations_service
@@ -222,6 +227,7 @@ async def test_start_new_ride_returns_correct_model():
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
     mock_rides_repo.create_active_ride = AsyncMock()
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     service = RideService()
     service.stations_service = mock_stations_service
@@ -266,6 +272,7 @@ async def test_start_new_ride_creates_database_entry():
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
     mock_rides_repo.create_active_ride = AsyncMock()
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
     service = RideService()
     service.stations_service = mock_stations_service
@@ -287,4 +294,45 @@ async def test_start_new_ride_creates_database_entry():
     assert args[2] == "USER_NEW"  # user_id
     assert args[3] == "V_NEW"  # vehicle_id
     assert args[4] == 2  # start_station_id
+
+
+@pytest.mark.asyncio
+async def test_start_new_ride_user_already_has_active_ride():
+    """Test that a user cannot start a new ride if they already have an active one."""
+    mock_stations_service = Mock(spec=StationsService)
+    mock_vehicles_repo = Mock(spec=VehiclesRepository)
+    mock_rides_repo = Mock(spec=RidesRepository)
+
+    # Mock return an active ride for the user
+    existing_ride = Ride(
+        ride_id="EXISTING_RIDE",
+        user_id="USER_WITH_ACTIVE_RIDE",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=existing_ride)
+
+    service = RideService()
+    service.stations_service = mock_stations_service
+    service.vehicles_repo = mock_vehicles_repo
+    service.rides_repo = mock_rides_repo
+
+    mock_db = Mock()
+
+    # Should raise HTTPException with status code 409
+    with pytest.raises(HTTPException) as exc_info:
+        await service.start_new_ride(mock_db, user_id="USER_WITH_ACTIVE_RIDE", lon=34.0, lat=32.0)
+
+    assert exc_info.value.status_code == 409
+    assert "already has an active ride" in exc_info.value.detail
+
+    # Verify that station service was never called (early exit)
+    mock_stations_service.get_nearest_station_with_vehicles.assert_not_called()
+    # Verify that vehicles repo was never called
+    mock_vehicles_repo.get_available_vehicles_by_station.assert_not_called()
+    # Verify that a new ride was not created
+    mock_rides_repo.create_active_ride.assert_not_called()
 
