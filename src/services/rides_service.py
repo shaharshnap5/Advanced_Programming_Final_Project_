@@ -98,8 +98,9 @@ class RideService:
         """
         
         # Step 1: Verify ride exists
-        # For now, we'll assume the ride exists (in production, check FleetManager or DB)
-        # In a real system, you'd check FleetManager.active_rides or database
+        ride = await self.rides_repo.get_by_id(db, ride_id)
+        if not ride:
+            raise HTTPException(status_code=404, detail=f"Ride with ID {ride_id} not found.")
         
         # Step 2: Find nearest station with capacity
         stations = await self.stations_service.get_stations_with_capacity(db)
@@ -124,10 +125,12 @@ class RideService:
         station_id = nearest_station["station_id"]
         
         # Step 3 & 4: Get vehicle and dock it (incrementing rides counter)
-        # We need to get the vehicle from the ride's vehicle_id
-        # For now, assuming ride is stored somewhere or we query it
-        # In production, you'd get vehicle_id from FleetManager or Rides table
-        # Let me assume the ride object is available - we'll need this from the caller
+        vehicle = await self.vehicles_repo.get_by_id(db, ride.vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=400, detail=f"Vehicle {ride.vehicle_id} not found.")
+        
+        # Dock the vehicle at the station
+        docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
         
         # Step 5: Calculate and process payment
         # For now, return a fixed 15 ILS

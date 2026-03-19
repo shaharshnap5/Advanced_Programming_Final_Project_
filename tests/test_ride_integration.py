@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import pytest
-from datetime import datetime
+from datetime import datetime, date
 
 from src.models.ride import Ride, process_end_of_ride
 from src.models.user import User
+from src.models.vehicle import Vehicle, VehicleType, VehicleStatus
 
 
 @pytest.mark.asyncio
@@ -209,6 +210,30 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
         },
     ]
     
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     
     mock_db = Mock()
@@ -238,6 +263,30 @@ async def test_ride_end_selects_station_with_capacity(test_db):
         {"station_id": 2, "name": "S2", "lat": 32.4, "lon": 34.4, "max_capacity": 10, "current_capacity": 8},   # Available
         {"station_id": 3, "name": "S3", "lat": 32.6, "lon": 34.6, "max_capacity": 10, "current_capacity": 10},  # Full
     ]
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=2,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=2,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     
@@ -286,6 +335,14 @@ async def test_vehicle_dock_state_transitions(test_db):
     service.vehicles_repo.dock_vehicle = AsyncMock(return_value=docked_vehicle)
     
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="BIKE_001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     
     mock_db = Mock()
@@ -305,6 +362,30 @@ async def test_multiple_concurrent_rides_ending(test_db):
     service = RideService()
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_003",
+        user_id="USER_003",
+        vehicle_id="V003",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V003",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V003",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
     
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 20, "current_capacity": 15}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
@@ -328,6 +409,30 @@ async def test_payment_logic_normal_ride(test_db):
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
     
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_NORMAL",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     
@@ -348,6 +453,30 @@ async def test_nearest_station_calculation(test_db):
     service = RideService()
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=3,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
     
     # Create stations at known distances
     # User drops off at (32.1, 34.1)

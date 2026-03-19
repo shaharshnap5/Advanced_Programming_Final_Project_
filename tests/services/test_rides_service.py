@@ -297,11 +297,47 @@ async def test_start_new_ride_creates_database_entry():
 async def test_end_ride_success():
     """Test successful ride end with all steps: dock, charge, clear active ride."""
     # Setup mocked dependencies
+    rides_repo = AsyncMock(spec=RidesRepository)
     vehicles_repo = AsyncMock(spec=VehiclesRepository)
     users_repo = AsyncMock(spec=UsersRepository)
     
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    
+    # Mock vehicle
+    mock_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    
+    # Mock docked vehicle
+    docked_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.dock_vehicle = AsyncMock(return_value=docked_vehicle)
+    
     # Mock service with dependencies
     service = RideService()
+    service.rides_repo = rides_repo
     service.vehicles_repo = vehicles_repo
     service.users_repo = users_repo
     
@@ -343,7 +379,22 @@ async def test_end_ride_success():
 @pytest.mark.asyncio
 async def test_end_ride_no_available_station():
     """Test error when no station with free capacity is available."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    
     service = RideService()
+    service.rides_repo = rides_repo
     service.stations_service = AsyncMock()
     
     # All stations are full
@@ -379,7 +430,22 @@ async def test_end_ride_no_available_station():
 @pytest.mark.asyncio
 async def test_end_ride_no_stations():
     """Test error when no stations exist."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    
     service = RideService()
+    service.rides_repo = rides_repo
     service.stations_service = AsyncMock()
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=[])
     
@@ -397,7 +463,36 @@ async def test_end_ride_no_stations():
 @pytest.mark.asyncio
 async def test_end_ride_payment_fixed_15_ils():
     """Test that payment is always 15 ILS for normal rides."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    
+    # Mock vehicle
+    mock_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    vehicles_repo.dock_vehicle = AsyncMock(return_value=mock_vehicle)
+    
     service = RideService()
+    service.rides_repo = rides_repo
+    service.vehicles_repo = vehicles_repo
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
     
@@ -415,7 +510,36 @@ async def test_end_ride_payment_fixed_15_ils():
 @pytest.mark.asyncio
 async def test_end_ride_selects_nearest_station():
     """Test that the nearest station by euclidean distance is selected."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    
+    # Mock vehicle
+    mock_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    vehicles_repo.dock_vehicle = AsyncMock(return_value=mock_vehicle)
+    
     service = RideService()
+    service.rides_repo = rides_repo
+    service.vehicles_repo = vehicles_repo
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
     
@@ -441,16 +565,19 @@ async def test_end_ride_selects_nearest_station():
 @pytest.mark.asyncio
 async def test_end_ride_handles_missing_fields():
     """Test error handling for invalid input."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock get_by_id to return None when ride doesn't exist
+    rides_repo.get_by_id = AsyncMock(return_value=None)
+    
     service = RideService()
+    service.rides_repo = rides_repo
     mock_db = Mock()
     
     # The controller should validate, but let's test service too
-    # If None values get through, service should handle gracefully
-    service.stations_service = AsyncMock()
-    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=[])
-    
+    # If ride_id is empty or invalid, it won't be found (404)
     with pytest.raises(HTTPException) as exc_info:
         await service.end_ride(mock_db, "", None, None)
     
-    assert exc_info.value.status_code == 400
+    assert exc_info.value.status_code == 404
 
