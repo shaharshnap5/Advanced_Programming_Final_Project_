@@ -1,8 +1,17 @@
 """Tests for rides CSV data loading."""
 
+import asyncio
 import pytest
 import sqlite3
 from pathlib import Path
+
+from scripts.init_db import init_db
+
+
+@pytest.fixture(scope="module", autouse=True)
+def ensure_rides_db_loaded():
+    """Initialize and seed the app.db from CSV before rides CSV tests."""
+    asyncio.run(init_db(reset_db=True))
 
 
 @pytest.fixture
