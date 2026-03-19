@@ -7,6 +7,12 @@ class RideStartRequest(BaseModel):
     lat: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
 
 
+class EndRidePayload(BaseModel):
+    ride_id: str = Field(..., min_length=1, description="Ride ID to end")
+    lon: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
+    lat: float = Field(..., ge=-90, le=90, description="Latitude coordinate")
+
+
 class RideEndRequest(BaseModel):
     user_id: str = Field(..., min_length=1, description="User ID ending the ride")
     lon: float = Field(..., ge=-180, le=180, description="Longitude coordinate")
