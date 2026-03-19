@@ -20,8 +20,13 @@ macOS/Linux (bash/zsh):
 
 ### 2.5) Initialize the database
 
+Windows (PowerShell):
+
 `python .\scripts\init_db.py`
 
+macOS/Linux (bash/zsh):
+
+`python ./scripts/init_db.py`
 Reset the database (drop all tables and recreate):
 
 `python .\scripts\init_db.py --reset-db`

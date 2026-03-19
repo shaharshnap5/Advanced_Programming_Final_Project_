@@ -195,5 +195,179 @@ async def test_get_active_users_via_api():
                     "payment_token": "tok2",
                 },
             ]
+# ============ END RIDE TESTS ============
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_valid_payload():
+    """Test POST /ride/end with valid JSON payload."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "ride_id": "RIDE_12345",
+        "lon": 34.5,
+        "lat": 32.5,
+    }
+    
+    with patch("src.controllers.ride_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
+        mock_end_ride.return_value = {
+            "end_station_id": 5,
+            "payment_charged": 15,
+            "active_users": ["USER_A", "USER_B"],
+        }
+        
+        response = client.post("/ride/end", json=payload)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["end_station_id"] == 5
+        assert data["payment_charged"] == 15
+        assert data["active_users"] == ["USER_A", "USER_B"]
+        mock_end_ride.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_missing_ride_id():
+    """Test POST /ride/end with missing ride_id."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "lon": 34.5,
+        "lat": 32.5,
+        # Missing: "ride_id"
+    }
+    
+    response = client.post("/ride/end", json=payload)
+    
+    # Pydantic validation should fail
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_missing_lon():
+    """Test POST /ride/end with missing lon."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "ride_id": "RIDE_001",
+        "lat": 32.5,
+        # Missing: "lon"
+    }
+    
+    response = client.post("/ride/end", json=payload)
+    
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_missing_lat():
+    """Test POST /ride/end with missing lat."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "ride_id": "RIDE_001",
+        "lon": 34.5,
+        # Missing: "lat"
+    }
+    
+    response = client.post("/ride/end", json=payload)
+    
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_invalid_json():
+    """Test POST /ride/end with invalid JSON."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    response = client.post("/ride/end", content="{invalid json")
+    
+    # FastAPI returns 422 for validation errors  
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_wrong_types():
+    """Test POST /ride/end with wrong data types."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "ride_id": "RIDE_001",
+        "lon": "not_a_number",  # Should be float
+        "lat": 32.5,
+    }
+    
+    response = client.post("/ride/end", json=payload)
+    
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_service_error():
+    """Test POST /ride/end when service raises an error."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "ride_id": "RIDE_MISSING",
+        "lon": 34.5,
+        "lat": 32.5,
+    }
+    
+    with patch("src.controllers.ride_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
+        mock_end_ride.side_effect = HTTPException(status_code=404, detail="Ride not found")
+        
+        response = client.post("/ride/end", json=payload)
+        
+        assert response.status_code == 404
+        assert "Ride not found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_end_ride_endpoint_response_structure():
+    """Test that response includes all required fields."""
+    from fastapi.testclient import TestClient
+    from src.main import app
+    
+    client = TestClient(app)
+    payload = {
+        "ride_id": "RIDE_001",
+        "lon": 34.5,
+        "lat": 32.5,
+    }
+    
+    with patch("src.controllers.ride_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
+        mock_end_ride.return_value = {
+            "end_station_id": 1,
+            "payment_charged": 15,
+            "active_users": [],
+        }
+        
+        response = client.post("/ride/end", json=payload)
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Verify all required fields exist
+        assert "end_station_id" in data
+        assert "payment_charged" in data
+        assert "active_users" in data
+        
+        # Verify types
+        assert isinstance(data["end_station_id"], int)
+        assert isinstance(data["payment_charged"], int)
+        assert isinstance(data["active_users"], list)
 
 

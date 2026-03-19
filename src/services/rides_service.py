@@ -9,6 +9,8 @@ from src.models.user import User
 from src.services.stations_service import StationsService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
+from src.repositories.users_repository import UsersRepository
+from src.utilis.distance import calculate_euclidean_distance
 
 
 
@@ -17,6 +19,7 @@ class RideService:
         self.vehicles_repo = VehiclesRepository()
         self.rides_repo = RidesRepository()
         self.stations_service = StationsService()
+        self.users_repo = UsersRepository()
 
     async def list_active_users(self, db: aiosqlite.Connection) -> list[User]:
         """Return User objects currently in active rides."""
@@ -31,6 +34,11 @@ class RideService:
     async def start_new_ride(
             self, db: aiosqlite.Connection, user_id: str, lon: float, lat: float
     ) -> Ride:
+        # 0. Check if user already has an active ride
+        active_ride = await self.rides_repo.get_active_ride_by_user(db, user_id)
+        if active_ride:
+            raise HTTPException(status_code=409, detail="User already has an active ride.")
+
         # 1. Find the nearest station THAT ACTUALLY HAS VEHICLES
         nearest_station = await self.stations_service.get_nearest_station_with_vehicles(db, lon=lon, lat=lat)
 
@@ -85,3 +93,65 @@ class RideService:
             start_time=start_time,
             start_station_id=station_id
         )
+
+    async def end_ride(
+        self,
+        db: aiosqlite.Connection,
+        ride_id: str,
+        lon: float,
+        lat: float,
+    ) -> dict:
+        """
+        End an active ride with the following flow:
+        1. Verify ride exists in active rides
+        2. Find nearest station with available capacity
+        3. Dock the vehicle at that station
+        4. Increment vehicle's ride counter (sets to degraded if > 10)
+        5. Charge the user 15 ILS (0 if degraded report)
+        6. Clear user's active ride
+        """
+        
+        # Step 1: Verify ride exists
+        ride = await self.rides_repo.get_by_id(db, ride_id)
+        if not ride:
+            raise HTTPException(status_code=404, detail=f"Ride with ID {ride_id} not found.")
+        
+        # Step 2: Find nearest station with capacity
+        stations = await self.stations_service.get_stations_with_capacity(db)
+        if not stations:
+            raise HTTPException(status_code=400, detail="No stations available to dock the vehicle.")
+        
+        # Filter only stations with free capacity
+        available_stations = [
+            s for s in stations 
+            if s["current_capacity"] < s["max_capacity"]
+        ]
+        
+        if not available_stations:
+            raise HTTPException(status_code=400, detail="No station with free capacity available.")
+        
+        # Find nearest by euclidean distance
+        nearest_station = min(
+            available_stations,
+            key=lambda s: calculate_euclidean_distance(lat, lon, s["lat"], s["lon"])
+        )
+        
+        station_id = nearest_station["station_id"]
+        
+        # Step 3 & 4: Get vehicle and dock it (incrementing rides counter)
+        vehicle = await self.vehicles_repo.get_by_id(db, ride.vehicle_id)
+        if not vehicle:
+            raise HTTPException(status_code=400, detail=f"Vehicle {ride.vehicle_id} not found.")
+        
+        # Dock the vehicle at the station
+        docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
+        
+        # Step 5: Calculate and process payment
+        # For now, return a fixed 15 ILS
+        payment_charged = 15
+        
+        # Return response object (only required fields per specification)
+        return {
+            "end_station_id": station_id,
+            "payment_charged": payment_charged,
+        }

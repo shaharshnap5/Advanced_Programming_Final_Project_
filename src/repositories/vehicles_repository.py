@@ -1,5 +1,5 @@
 from __future__ import annotations
-from src.models.vehicle import Vehicle
+from src.models.vehicle import Vehicle, VehicleStatus
 
 import aiosqlite
 
@@ -152,3 +152,34 @@ class VehiclesRepository:
         async with db.execute(query, (station_id,)) as cursor:
             rows = await cursor.fetchall()
             return [Vehicle(**dict(row)) for row in rows]
+
+    async def dock_vehicle(
+        self,
+        db: aiosqlite.Connection,
+        vehicle_id: str,
+        station_id: int,
+        rides_count: int,
+        status: VehicleStatus = VehicleStatus.available
+    ) -> Vehicle | None:
+        """
+        Dock a vehicle at a station after a ride ends.
+        Updates: station_id, rides_since_last_treated, status
+        Vehicles become 'degraded' when rides_since_last_treated > 10
+        """
+        final_status = VehicleStatus.degraded if rides_count > 10 else status
+        
+        cursor = await db.execute(
+            """
+            UPDATE vehicles
+            SET station_id = ?, rides_since_last_treated = ?, status = ?
+            WHERE vehicle_id = ?
+            """,
+            (station_id, rides_count, final_status, vehicle_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        
+        if affected > 0:
+            return await self.get_by_id(db, vehicle_id)
+        return None
