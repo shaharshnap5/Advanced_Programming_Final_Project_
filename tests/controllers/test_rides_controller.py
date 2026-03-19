@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from src.schemas.ride_schemas import RideStartRequest
 from src.models.ride import Ride
+from src.main import app
 
 
 @pytest.mark.asyncio

@@ -252,14 +252,6 @@ async def test_list_active_user_ids():
     assert users == ["USER_A", "USER_B"]
     repo.get_active_user_ids.assert_called_once()
 
-    assert hasattr(result, 'is_degraded_report')
-
-    # Verify model values
-    assert result.user_id == "USER_TEST"
-    assert result.vehicle_id == "V_TEST"
-    assert result.start_station_id == 5
-    assert result.is_degraded_report is False
-
 
 @pytest.mark.asyncio
 async def test_start_new_ride_creates_database_entry():

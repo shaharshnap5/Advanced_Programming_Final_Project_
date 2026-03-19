@@ -168,7 +168,7 @@ async def test_get_active_user_ids_returns_only_incomplete_rides(test_db):
 
     await test_db.execute(
         "INSERT INTO rides (ride_id, user_id, vehicle_id, start_station_id, end_station_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)",
-        ("RIDE_ACTIVE", "USER_ACTIVE", "V001", 1, NULL)
+        ("RIDE_ACTIVE", "USER_ACTIVE", "V001", 1, None)
     )
 
     await test_db.execute(
