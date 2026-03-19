@@ -26,19 +26,6 @@ class RidesRepository:
         )
         await db.commit()
 
-    async def get_active_user_ids(self, db: aiosqlite.Connection) -> list[str]:
-        """Returns the list of user IDs with currently active rides."""
-        cursor = await db.execute(
-            """
-            SELECT DISTINCT user_id
-            FROM rides
-            WHERE end_time IS NULL OR end_station_id IS NULL
-            """
-        )
-        rows = await cursor.fetchall()
-        await cursor.close()
-        return [row["user_id"] for row in rows if row["user_id"] is not None]
-
     async def get_active_users(self, db: aiosqlite.Connection) -> list[User]:
         """Returns the list of active User objects for currently active rides."""
         cursor = await db.execute(
@@ -52,3 +39,8 @@ class RidesRepository:
         rows = await cursor.fetchall()
         await cursor.close()
         return [User(**dict(row)) for row in rows]
+
+    async def get_active_user_ids(self, db: aiosqlite.Connection) -> list[str]:
+        """Returns the list of user IDs with currently active rides (legacy)."""
+        users = await self.get_active_users(db)
+        return [user.user_id for user in users]
