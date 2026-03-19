@@ -7,7 +7,7 @@ class RidesRepository:
         """Fetches a ride by ID, or None if not found."""
         cursor = await db.execute(
             "SELECT * FROM rides WHERE ride_id = ?",
-            (ride_id,)
+            (ride_id,))
     async def get_active_ride_by_user(self, db: aiosqlite.Connection, user_id: str) -> Ride | None:
         """Fetches the active ride for a user as a Ride object, or None if no active ride exists."""
         cursor = await db.execute(
