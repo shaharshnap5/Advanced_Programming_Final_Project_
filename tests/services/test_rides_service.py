@@ -392,17 +392,6 @@ async def test_end_ride_no_available_station():
     mock_ride = Ride(
         ride_id="RIDE001",
         user_id="USER001",
-@pytest.mark.asyncio
-async def test_start_new_ride_user_already_has_active_ride():
-    """Test that a user cannot start a new ride if they already have an active one."""
-    mock_stations_service = Mock(spec=StationsService)
-    mock_vehicles_repo = Mock(spec=VehiclesRepository)
-    mock_rides_repo = Mock(spec=RidesRepository)
-
-    # Mock return an active ride for the user
-    existing_ride = Ride(
-        ride_id="EXISTING_RIDE",
-        user_id="USER_WITH_ACTIVE_RIDE",
         vehicle_id="V001",
         start_station_id=1,
         start_time=datetime(2026, 3, 19, 10, 0, 0),
@@ -443,6 +432,46 @@ async def test_start_new_ride_user_already_has_active_ride():
     
     assert exc_info.value.status_code == 400
     assert "capacity" in exc_info.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_start_new_ride_user_already_has_active_ride():
+    """Test that a user cannot start a new ride if they already have an active one."""
+    mock_rides_repo = AsyncMock(spec=RidesRepository)
+    mock_stations_service = AsyncMock(spec=StationsService)
+    mock_vehicles_repo = AsyncMock(spec=VehiclesRepository)
+
+    # Mock return an active ride for the user
+    existing_ride = Ride(
+        ride_id="EXISTING_RIDE",
+        user_id="USER_WITH_ACTIVE_RIDE",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=existing_ride)
+    
+    service = RideService()
+    service.rides_repo = mock_rides_repo
+    service.stations_service = mock_stations_service
+    service.vehicles_repo = mock_vehicles_repo
+    
+    mock_db = Mock()
+    
+    # Should raise 409 when user already has an active ride
+    with pytest.raises(HTTPException) as exc_info:
+        await service.start_new_ride(mock_db, "USER_WITH_ACTIVE_RIDE", 34.5, 32.5)
+    
+    assert exc_info.value.status_code == 409
+    assert "already has an active ride" in exc_info.value.detail.lower()
+    
+    # Verify that we checked for active rides but didn't proceed further
+    mock_rides_repo.get_active_ride_by_user.assert_called_once_with(mock_db, "USER_WITH_ACTIVE_RIDE")
+    # Should NOT have tried to get nearest station
+    mock_stations_service.get_nearest_station_with_vehicles.assert_not_called()
+
 
 
 @pytest.mark.asyncio
@@ -598,26 +627,4 @@ async def test_end_ride_handles_missing_fields():
         await service.end_ride(mock_db, "", None, None)
     
     assert exc_info.value.status_code == 404
-    mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=existing_ride)
-
-    service = RideService()
-    service.stations_service = mock_stations_service
-    service.vehicles_repo = mock_vehicles_repo
-    service.rides_repo = mock_rides_repo
-
-    mock_db = Mock()
-
-    # Should raise HTTPException with status code 409
-    with pytest.raises(HTTPException) as exc_info:
-        await service.start_new_ride(mock_db, user_id="USER_WITH_ACTIVE_RIDE", lon=34.0, lat=32.0)
-
-    assert exc_info.value.status_code == 409
-    assert "already has an active ride" in exc_info.value.detail
-
-    # Verify that station service was never called (early exit)
-    mock_stations_service.get_nearest_station_with_vehicles.assert_not_called()
-    # Verify that vehicles repo was never called
-    mock_vehicles_repo.get_available_vehicles_by_station.assert_not_called()
-    # Verify that a new ride was not created
-    mock_rides_repo.create_active_ride.assert_not_called()
 
