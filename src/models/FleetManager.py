@@ -26,6 +26,7 @@ class FleetManager:
 
         # 2. In-Memory State Dictionaries
         self.stations: Dict[int, Station] = {}  # [cite: 334]
+        self.vehicles: Dict[str, Vehicle] = {}  # Store all vehicles by vehicle_id
         self.users: Dict[str, User] = {}  # [cite: 335]
         self.active_rides: Dict[str, Ride] = {}  # [cite: 336]
 
@@ -53,7 +54,7 @@ class FleetManager:
                     vehicles=[]
                 )
                 self.stations[station_id] = station
-        
+
         # Load vehicles and wire them to stations
         with open(vehicles_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -64,7 +65,7 @@ class FleetManager:
                 status = VehicleStatus(row['status'])
                 rides_since_last_treated = int(row['rides_since_last_treated'])
                 last_treated_date = datetime.strptime(row['last_treated_date'], '%Y-%m-%d').date() if row['last_treated_date'] else None
-                
+
                 # Create vehicle (basic Vehicle for now, can be extended with Factory Method)
                 vehicle = Vehicle(
                     vehicle_id=vehicle_id,
@@ -74,7 +75,10 @@ class FleetManager:
                     rides_since_last_treated=rides_since_last_treated,
                     last_treated_date=last_treated_date
                 )
-                
+
+                # Store vehicle in state
+                self.vehicles[vehicle_id] = vehicle
+
                 # Wire vehicle to station if it has a station_id
                 if station_id and station_id in self.stations:
                     self.stations[station_id].vehicles.append(vehicle_id)
