@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import ValidationError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import ValidationError
 from aiosqlite import Connection
 
 from src.db import get_db
@@ -22,7 +20,7 @@ async def create_user(
     """Register a new user and return the generated user_id."""
     try:
         payload = await request.json()
-    except Exception as e:  # pragma: no cover
+    except Exception:  # pragma: no cover
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
     try:
@@ -31,7 +29,13 @@ async def create_user(
         raise HTTPException(status_code=400, detail=e.errors())
 
     try:
-        result = await service.create_user(db, data.user_id)
+        result = await service.create_user(
+            db,
+            data.user_id,
+            data.first_name,
+            data.last_name,
+            data.email,
+        )
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 

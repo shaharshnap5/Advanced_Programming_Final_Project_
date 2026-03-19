@@ -14,6 +14,18 @@ pip install -r requirements.txt
 python ./scripts/init_db.py
 ```
 
+This creates missing tables and seeds data from CSV files:
+
+- `data/stations.csv`
+- `data/vehicles.csv`
+- `data/users.csv` (10 mock users)
+
+To fully reset the database (drop all tables and recreate):
+
+```bash
+python ./scripts/init_db.py --reset-db
+```
+
 You should now have data/app.db.
 
 ## 3) Run the API
