@@ -6,6 +6,7 @@ import pytest
 from datetime import datetime
 
 from src.repositories.rides_repository import RidesRepository
+from src.models.ride import Ride
 
 
 @pytest.mark.asyncio
@@ -154,4 +155,144 @@ async def test_create_active_ride_with_specific_timestamp(test_db):
     row = await cursor.fetchone()
     # The timestamp should be stored as provided
     assert row["start_time"] is not None
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_user_returns_ride_object(test_db):
+    """Test that get_active_ride_by_user returns a Ride object, not a database row."""
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_ACTIVE_001",
+        user_id="USER_ACTIVE_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time
+    )
+
+    # Get the active ride - should be a Ride object
+    active_ride = await repo.get_active_ride_by_user(test_db, "USER_ACTIVE_001")
+    
+    # Verify it's a Ride object, not a database row
+    assert isinstance(active_ride, Ride)
+    assert active_ride.ride_id == "RIDE_ACTIVE_001"
+    assert active_ride.user_id == "USER_ACTIVE_001"
+    assert active_ride.vehicle_id == "V001"
+    assert active_ride.start_station_id == 1
+    assert active_ride.start_time == start_time
+    assert active_ride.end_time is None
+    assert active_ride.is_degraded_report == False
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_user_returns_none_when_no_active_ride(test_db):
+    """Test that get_active_ride_by_user returns None when user has no active ride."""
+    repo = RidesRepository()
+
+    active_ride = await repo.get_active_ride_by_user(test_db, "USER_NO_RIDE")
+    
+    assert active_ride is None
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_user_ignores_completed_rides(test_db):
+    """Test that get_active_ride_by_user ignores completed rides (with end_time)."""
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+    end_time = datetime(2026, 3, 17, 10, 45, 0)
+
+    # Create an active ride
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_ACTIVE_002",
+        user_id="USER_WITH_COMPLETED_RIDE",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time
+    )
+
+    # Mark this ride as completed by updating end_time
+    await test_db.execute(
+        "UPDATE rides SET end_time = ? WHERE ride_id = ?",
+        (end_time, "RIDE_ACTIVE_002")
+    )
+    await test_db.commit()
+
+    # Get active ride should return None because the ride is completed
+    active_ride = await repo.get_active_ride_by_user(test_db, "USER_WITH_COMPLETED_RIDE")
+    
+    assert active_ride is None
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_user_only_returns_first_active_ride(test_db):
+    """Test that get_active_ride_by_user returns only one ride (first active)."""
+    repo = RidesRepository()
+    start_time_1 = datetime(2026, 3, 17, 10, 30, 0)
+    start_time_2 = datetime(2026, 3, 17, 11, 30, 0)
+
+    # Create first active ride
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_MULTI_ACTIVE_001",
+        user_id="USER_MULTI_RIDES",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time_1
+    )
+
+    # Create second active ride (shouldn't happen in real scenario, but testing the query)
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_MULTI_ACTIVE_002",
+        user_id="USER_MULTI_RIDES",
+        vehicle_id="V002",
+        start_station_id=2,
+        start_time=start_time_2
+    )
+
+    # Get active ride should return the first one (query returns only one row)
+    active_ride = await repo.get_active_ride_by_user(test_db, "USER_MULTI_RIDES")
+    
+    assert active_ride is not None
+    assert isinstance(active_ride, Ride)
+    assert active_ride.user_id == "USER_MULTI_RIDES"
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_user_has_all_attributes(test_db):
+    """Test that the returned Ride object has all expected attributes."""
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_FULL_ATTRS",
+        user_id="USER_FULL_ATTRS",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time
+    )
+
+    active_ride = await repo.get_active_ride_by_user(test_db, "USER_FULL_ATTRS")
+    
+    # Verify all attributes exist
+    assert hasattr(active_ride, 'ride_id')
+    assert hasattr(active_ride, 'user_id')
+    assert hasattr(active_ride, 'vehicle_id')
+    assert hasattr(active_ride, 'start_station_id')
+    assert hasattr(active_ride, 'end_station_id')
+    assert hasattr(active_ride, 'start_time')
+    assert hasattr(active_ride, 'end_time')
+    assert hasattr(active_ride, 'is_degraded_report')
+    
+    # Verify all attributes are of correct types
+    assert isinstance(active_ride.ride_id, str)
+    assert isinstance(active_ride.user_id, str)
+    assert isinstance(active_ride.vehicle_id, str)
+    assert isinstance(active_ride.start_station_id, int)
+    assert isinstance(active_ride.start_time, datetime)
+    assert isinstance(active_ride.is_degraded_report, bool)
 

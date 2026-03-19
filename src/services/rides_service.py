@@ -25,6 +25,11 @@ class RideService:
     async def start_new_ride(
             self, db: aiosqlite.Connection, user_id: str, lon: float, lat: float
     ) -> Ride:
+        # 0. Check if user already has an active ride
+        active_ride = await self.rides_repo.get_active_ride_by_user(db, user_id)
+        if active_ride:
+            raise HTTPException(status_code=409, detail="User already has an active ride.")
+
         # 1. Find the nearest station THAT ACTUALLY HAS VEHICLES
         nearest_station = await self.stations_service.get_nearest_station_with_vehicles(db, lon=lon, lat=lat)
 

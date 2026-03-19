@@ -17,6 +17,7 @@ from db.schema import CREATE_SQL
 STATIONS_CSV = PROJECT_ROOT / "data" / "stations.csv"
 VEHICLES_CSV = PROJECT_ROOT / "data" / "vehicles.csv"
 USERS_CSV = PROJECT_ROOT / "data" / "users.csv"
+RIDES_CSV = PROJECT_ROOT / "data" / "rides.csv"
 DB_PATH = PROJECT_ROOT / "data" / "app.db"
 
 async def init_db(reset_db: bool = False) -> None:
@@ -69,6 +70,24 @@ async def init_db(reset_db: bool = False) -> None:
             users[["user_id", "first_name", "last_name", "email", "payment_token"]].itertuples(
                 index=False, name=None
             ),
+        )
+
+        print("Loading rides...")
+        rides = pd.read_csv(RIDES_CSV)
+        await db.executemany(
+            """INSERT OR IGNORE INTO rides(
+                   ride_id, user_id, vehicle_id, start_station_id, end_station_id, is_degraded_report, start_time, end_time
+               ) VALUES(?,?,?,?,?,?,?,?)""",
+            rides[[
+                "ride_id",
+                "user_id",
+                "vehicle_id",
+                "start_station_id",
+                "end_station_id",
+                "is_degraded_report",
+                "start_time",
+                "end_time",
+            ]].itertuples(index=False, name=None),
         )
         # -------------------------------------
 

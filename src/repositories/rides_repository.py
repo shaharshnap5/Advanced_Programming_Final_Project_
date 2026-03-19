@@ -8,6 +8,11 @@ class RidesRepository:
         cursor = await db.execute(
             "SELECT * FROM rides WHERE ride_id = ?",
             (ride_id,)
+    async def get_active_ride_by_user(self, db: aiosqlite.Connection, user_id: str) -> Ride | None:
+        """Fetches the active ride for a user as a Ride object, or None if no active ride exists."""
+        cursor = await db.execute(
+            "SELECT * FROM rides WHERE user_id = ? AND end_time IS NULL",
+            (user_id,)
         )
         row = await cursor.fetchone()
         if row is None:
