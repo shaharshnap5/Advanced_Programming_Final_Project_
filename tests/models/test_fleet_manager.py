@@ -148,6 +148,9 @@ class TestFleetManagerStateDictionaries:
         """Test adding a user to the fleet manager."""
         user = User(
             user_id="USER001",
+            first_name="Fleet",
+            last_name="User",
+            email="fleet.user@example.com",
             payment_token="tok_visa_123456"
         )
 
@@ -187,7 +190,13 @@ class TestFleetManagerStateDictionaries:
     def test_multiple_users(self, fleet_manager):
         """Test adding and managing multiple users."""
         users = [
-            User(user_id=f"USER{i:03d}", payment_token=f"tok_visa_{i}")
+            User(
+                user_id=f"USER{i:03d}",
+                first_name=f"First{i}",
+                last_name=f"Last{i}",
+                email=f"user{i:03d}@example.com",
+                payment_token=f"tok_visa_{i}",
+            )
             for i in range(1, 4)
         ]
 
@@ -235,6 +244,9 @@ class TestFleetManagerStateDictionaries:
         """Test retrieving a user by ID."""
         user = User(
             user_id="USER_RETRIEVE",
+            first_name="Retrieve",
+            last_name="User",
+            email="retrieve.user@example.com",
             payment_token="tok_retrieve_123"
         )
         fleet_manager.users["USER_RETRIEVE"] = user
@@ -275,7 +287,13 @@ class TestFleetManagerStateDictionaries:
 
     def test_remove_user(self, fleet_manager):
         """Test removing a user."""
-        user = User(user_id="USER_REMOVE", payment_token="tok_remove")
+        user = User(
+            user_id="USER_REMOVE",
+            first_name="Remove",
+            last_name="User",
+            email="remove.user@example.com",
+            payment_token="tok_remove",
+        )
         fleet_manager.users["USER_REMOVE"] = user
         assert "USER_REMOVE" in fleet_manager.users
 

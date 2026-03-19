@@ -15,6 +15,9 @@ async def test_complete_ride_lifecycle_integration(test_db):
     # Setup: Create a user and ride
     user = User(
         user_id="USER_INTEGRATION",
+        first_name="Integration",
+        last_name="User",
+        email="user.integration@example.com",
         payment_token="TEST_TOKEN_123"
     )
 
@@ -43,12 +46,9 @@ async def test_complete_ride_lifecycle_integration(test_db):
 
     # User starts the ride
     assert user.can_start_ride() is True
-    user.current_ride_id = ride.ride_id
-    assert user.can_start_ride() is False  # Active ride
 
     # End the ride and process
     process_end_of_ride(user, ride)
-    assert user.current_ride_id is None  # Ride cleared
 
 
 @pytest.mark.asyncio
@@ -57,6 +57,9 @@ async def test_degraded_ride_lifecycle_integration(test_db):
     # Setup: Create a user and degraded ride
     user = User(
         user_id="USER_DEGRADED",
+        first_name="Degraded",
+        last_name="User",
+        email="user.degraded@example.com",
         payment_token="TEST_TOKEN_456"
     )
 
@@ -77,12 +80,8 @@ async def test_degraded_ride_lifecycle_integration(test_db):
     cost = ride.calculate_cost()
     assert cost == 0
 
-    # User starts and ends the ride
-    user.current_ride_id = ride.ride_id
+    # User ends the ride
     process_end_of_ride(user, ride)
-
-    # Verify user was not charged
-    assert user.current_ride_id is None
 
 
 @pytest.mark.asyncio
@@ -90,6 +89,9 @@ async def test_multiple_sequential_rides(test_db):
     """Test multiple sequential rides for the same user."""
     user = User(
         user_id="USER_SEQUENTIAL",
+        first_name="Sequential",
+        last_name="User",
+        email="user.sequential@example.com",
         payment_token="TEST_TOKEN_789"
     )
 
@@ -108,7 +110,6 @@ async def test_multiple_sequential_rides(test_db):
     # Process all rides
     for ride in rides:
         assert user.can_start_ride() is True
-        user.current_ride_id = ride.ride_id
 
         cost = ride.calculate_cost()
         if ride.is_degraded_report:
@@ -117,7 +118,6 @@ async def test_multiple_sequential_rides(test_db):
             assert cost == 15
 
         process_end_of_ride(user, ride)
-        assert user.current_ride_id is None
 
 
 @pytest.mark.asyncio

@@ -21,8 +21,10 @@ CREATE TABLE IF NOT EXISTS vehicles (
 
 CREATE TABLE IF NOT EXISTS users (
   user_id TEXT PRIMARY KEY,
-  payment_token TEXT NOT NULL,
-  current_ride_id TEXT
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  payment_token TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS rides (

@@ -5,14 +5,20 @@ import aiosqlite
 
 from src.models.user import User
 from src.repositories.users_repository import UsersRepository
-from src.models.user import User
 
 
 class UsersService:
     def __init__(self, repository: UsersRepository | None = None) -> None:
         self._repository = repository or UsersRepository()
 
-    async def create_user(self, db: aiosqlite.Connection, user_id: str) -> User:
+    async def create_user(
+        self,
+        db: aiosqlite.Connection,
+        user_id: str,
+        first_name: str,
+        last_name: str,
+        email: str,
+    ) -> User:
         """Create a new user with a mocked payment token.
 
         Returns:
@@ -28,8 +34,21 @@ class UsersService:
         # Mocked billing token
         token = uuid.uuid4().hex
 
-        created = await self._repository.create(db, user_id=user_id, payment_token=token)
+        created = await self._repository.create(
+            db,
+            user_id=user_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            payment_token=token,
+        )
         if not created:
             raise Exception("Failed to create user")
 
-        return User(user_id=user_id, payment_token=token)
+        return User(
+            user_id=user_id,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            payment_token=token,
+        )
