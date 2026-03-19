@@ -1,50 +1,32 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.controllers.stations_controller import router as stations_router
 from src.controllers.vehicles_controller import router as vehicles_router
 from src.controllers.users_controller import router as users_router
 from src.controllers.ride_controller import router as ride_router
-from src.exceptions import ValidationException, NotFoundException, ConflictException
 
 app = FastAPI(title="Advanced Programming Final Project")
 
 
-# Global Exception Handlers
-@app.exception_handler(ValidationException)
-async def validation_exception_handler(request: Request, exc: ValidationException):
-    """Handle ValidationException and return 400 Bad Request."""
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"detail": exc.message}
-    )
-
-
-@app.exception_handler(NotFoundException)
-async def not_found_exception_handler(request: Request, exc: NotFoundException):
-    """Handle NotFoundException and return 404 Not Found."""
+# Generic 404 Handler for unimplemented routes
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: StarletteHTTPException):
+    """Return 404 for requests to routes that don't exist."""
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content={"detail": exc.message}
+        content={"detail": "Route not found"}
     )
 
 
-@app.exception_handler(ConflictException)
-async def conflict_exception_handler(request: Request, exc: ConflictException):
-    """Handle ConflictException and return 409 Conflict."""
+# Generic 500/502 Handler for unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions and return 502 Bad Gateway."""
     return JSONResponse(
-        status_code=status.HTTP_409_CONFLICT,
-        content={"detail": exc.message}
-    )
-
-
-@app.exception_handler(ValidationError)
-async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
-    """Handle Pydantic ValidationError and return 400 Bad Request."""
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={"detail": exc.errors()}
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        content={"detail": "Internal server error"}
     )
 
 
