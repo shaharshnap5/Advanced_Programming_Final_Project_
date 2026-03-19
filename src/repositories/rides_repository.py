@@ -23,3 +23,16 @@ class RidesRepository:
             (ride_id, user_id, vehicle_id, start_station_id, start_time)
         )
         await db.commit()
+
+    async def get_active_user_ids(self, db: aiosqlite.Connection) -> list[str]:
+        """Returns the list of user IDs with currently active rides."""
+        cursor = await db.execute(
+            """
+            SELECT DISTINCT user_id
+            FROM rides
+            WHERE end_time IS NULL OR end_station_id IS NULL
+            """
+        )
+        rows = await cursor.fetchall()
+        await cursor.close()
+        return [row["user_id"] for row in rows if row["user_id"] is not None]

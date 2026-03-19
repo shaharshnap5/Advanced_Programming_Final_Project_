@@ -159,3 +159,21 @@ async def test_start_ride_none_return():
         assert "Could not start ride" in exc_info.value.detail
 
 
+@pytest.mark.asyncio
+async def test_get_active_users_via_api():
+    from httpx import AsyncClient, ASGITransport
+
+    with patch("src.controllers.rides_controller.get_db") as mock_get_db:
+        mock_db = AsyncMock()
+        mock_get_db.return_value.__aenter__.return_value = mock_db
+
+        with patch("src.controllers.rides_controller.service.list_active_user_ids") as mock_list_active:
+            mock_list_active.return_value = ["USER_A", "USER_B"]
+
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.get("/rides/active-users")
+
+            assert response.status_code == 200
+            assert response.json() == ["USER_A", "USER_B"]
+
+

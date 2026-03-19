@@ -238,6 +238,20 @@ async def test_start_new_ride_returns_correct_model():
     assert hasattr(result, 'vehicle_id')
     assert hasattr(result, 'start_station_id')
     assert hasattr(result, 'start_time')
+
+
+@pytest.mark.asyncio
+async def test_list_active_user_ids():
+    repo = Mock(spec=RidesRepository)
+    repo.get_active_user_ids = AsyncMock(return_value=["USER_A", "USER_B"])
+
+    service = RideService()
+    service.rides_repo = repo
+
+    users = await service.list_active_user_ids(Mock())
+    assert users == ["USER_A", "USER_B"]
+    repo.get_active_user_ids.assert_called_once()
+
     assert hasattr(result, 'is_degraded_report')
 
     # Verify model values

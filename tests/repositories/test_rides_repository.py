@@ -155,3 +155,29 @@ async def test_create_active_ride_with_specific_timestamp(test_db):
     # The timestamp should be stored as provided
     assert row["start_time"] is not None
 
+
+@pytest.mark.asyncio
+async def test_get_active_user_ids_returns_only_incomplete_rides(test_db):
+    repo = RidesRepository()
+
+    # Create a user and one active ride + one completed ride
+    await test_db.execute(
+        "INSERT INTO users (user_id, first_name, last_name, email, payment_token) VALUES (?, ?, ?, ?, ?)",
+        ("USER_ACTIVE", "Active", "User", "active@example.com", "tok_active")
+    )
+
+    await test_db.execute(
+        "INSERT INTO rides (ride_id, user_id, vehicle_id, start_station_id, end_station_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)",
+        ("RIDE_ACTIVE", "USER_ACTIVE", "V001", 1, NULL)
+    )
+
+    await test_db.execute(
+        "INSERT INTO rides (ride_id, user_id, vehicle_id, start_station_id, end_station_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        ("RIDE_COMPLETE", "USER_ACTIVE", "V002", 2, 3)
+    )
+
+    await test_db.commit()
+
+    active_user_ids = await repo.get_active_user_ids(test_db)
+    assert active_user_ids == ["USER_ACTIVE"]
+

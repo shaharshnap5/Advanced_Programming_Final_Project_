@@ -13,10 +13,13 @@ from src.repositories.rides_repository import RidesRepository
 
 class RideService:
     def __init__(self):
-        # Initialize the warehouse workers
         self.vehicles_repo = VehiclesRepository()
         self.rides_repo = RidesRepository()
         self.stations_service = StationsService()
+
+    async def list_active_user_ids(self, db: aiosqlite.Connection) -> list[str]:
+        """Return user ids currently in active rides."""
+        return await self.rides_repo.get_active_user_ids(db)
 
 
     async def start_new_ride(
