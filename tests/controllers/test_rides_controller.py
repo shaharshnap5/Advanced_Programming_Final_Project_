@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from src.schemas.ride_schemas import RideStartRequest
 from src.models.ride import Ride
+from src.models.user import User
 from src.main import app
 
 
@@ -168,13 +169,31 @@ async def test_get_active_users_via_api():
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
-        with patch("src.controllers.rides_controller.service.list_active_user_ids") as mock_list_active:
-            mock_list_active.return_value = ["USER_A", "USER_B"]
+        with patch("src.controllers.rides_controller.service.list_active_users") as mock_list_active:
+            mock_list_active.return_value = [
+                User(user_id="USER_A", first_name="A", last_name="A", email="a@example.com", payment_token="tok1"),
+                User(user_id="USER_B", first_name="B", last_name="B", email="b@example.com", payment_token="tok2"),
+            ]
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.get("/rides/active-users")
 
             assert response.status_code == 200
-            assert response.json() == {"active_user_ids": ["USER_A", "USER_B"]}
+            assert response.json() == [
+                {
+                    "user_id": "USER_A",
+                    "first_name": "A",
+                    "last_name": "A",
+                    "email": "a@example.com",
+                    "payment_token": "tok1",
+                },
+                {
+                    "user_id": "USER_B",
+                    "first_name": "B",
+                    "last_name": "B",
+                    "email": "b@example.com",
+                    "payment_token": "tok2",
+                },
+            ]
 
 

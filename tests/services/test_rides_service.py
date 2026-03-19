@@ -241,16 +241,23 @@ async def test_start_new_ride_returns_correct_model():
 
 
 @pytest.mark.asyncio
-async def test_list_active_user_ids():
+async def test_list_active_users():
+    from src.models.user import User
+
     repo = Mock(spec=RidesRepository)
-    repo.get_active_user_ids = AsyncMock(return_value=["USER_A", "USER_B"])
+    repo.get_active_users = AsyncMock(return_value=[
+        User(user_id="USER_A", first_name="A", last_name="A", email="a@example.com", payment_token="tok1"),
+        User(user_id="USER_B", first_name="B", last_name="B", email="b@example.com", payment_token="tok2"),
+    ])
 
     service = RideService()
     service.rides_repo = repo
 
-    users = await service.list_active_user_ids(Mock())
-    assert users == ["USER_A", "USER_B"]
-    repo.get_active_user_ids.assert_called_once()
+    users = await service.list_active_users(Mock())
+    assert len(users) == 2
+    assert users[0].user_id == "USER_A"
+    assert users[1].user_id == "USER_B"
+    repo.get_active_users.assert_called_once()
 
 
 @pytest.mark.asyncio
