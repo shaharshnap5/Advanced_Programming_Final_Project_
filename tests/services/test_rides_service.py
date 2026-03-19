@@ -87,12 +87,13 @@ async def test_start_new_ride_no_available_station():
 
     mock_db = Mock()
 
-    # Should raise HTTPException
-    with pytest.raises(HTTPException) as exc_info:
+    # Should raise NotFoundException
+    from src.exceptions import NotFoundException
+
+    with pytest.raises(NotFoundException) as exc_info:
         await service.start_new_ride(mock_db, user_id="USER001", lon=34.0, lat=32.0)
 
-    assert exc_info.value.status_code == 404
-    assert "No available vehicles found" in exc_info.value.detail
+    assert "No available vehicles found" in exc_info.value.message
 
 
 @pytest.mark.asyncio

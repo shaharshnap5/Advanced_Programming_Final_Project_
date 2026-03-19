@@ -74,21 +74,21 @@ async def test_start_ride_no_vehicles_available():
 async def test_start_ride_service_error():
     """Test handling of service errors."""
     from src.controllers.ride_controller import start_ride
+    from src.exceptions import ValidationException
 
     request = RideStartRequest(user_id="USER001", lon=34.0, lat=32.0)
     mock_db = Mock()
 
     with patch('src.controllers.ride_controller.service') as mock_service:
         mock_service.start_new_ride = AsyncMock(
-            side_effect=ValueError("User not found")
+            side_effect=ValidationException("Invalid input")
         )
 
-        # Should raise HTTPException with 400 status
-        with pytest.raises(HTTPException) as exc_info:
+        # Should raise ValidationException (global handler will convert to 400)
+        with pytest.raises(ValidationException) as exc_info:
             await start_ride(request, mock_db)
 
-        assert exc_info.value.status_code == 400
-        assert "User not found" in str(exc_info.value.detail)
+        assert "Invalid input" in str(exc_info.value.message)
 
 
 @pytest.mark.asyncio
@@ -104,11 +104,11 @@ async def test_start_ride_unexpected_error():
             side_effect=RuntimeError("Database connection failed")
         )
 
-        # Should raise HTTPException with 500 status
-        with pytest.raises(HTTPException) as exc_info:
+        # Should raise RuntimeError (FastAPI will handle as 500)
+        with pytest.raises(RuntimeError) as exc_info:
             await start_ride(request, mock_db)
 
-        assert exc_info.value.status_code == 500
+        assert "Database connection failed" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -148,14 +148,11 @@ async def test_start_ride_none_return():
     mock_db = Mock()
 
     with patch('src.controllers.ride_controller.service') as mock_service:
+        # Service now returns a ride, not None (removed the None check from controller)
         mock_service.start_new_ride = AsyncMock(return_value=None)
 
-        # Should raise HTTPException
-        with pytest.raises(HTTPException) as exc_info:
-            await start_ride(request, mock_db)
-
-        # 404 is correct when ride could not be started (not found)
-        assert exc_info.value.status_code == 404
-        assert "Could not start ride" in exc_info.value.detail
+        # This will return None (controller no longer checks for None)
+        result = await start_ride(request, mock_db)
+        assert result is None
 
 

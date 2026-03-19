@@ -201,12 +201,14 @@ async def test_treat_vehicle_with_station():
 @pytest.mark.asyncio
 async def test_treat_vehicle_not_eligible():
     """Test treatment fails for non-eligible vehicle."""
+    from src.exceptions import ValidationException
+
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
+
         with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
-            mock_treat.side_effect = ValueError("Vehicle V003 is not eligible for treatment")
+            mock_treat.side_effect = ValidationException("Vehicle V003 is not eligible for treatment")
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post("/vehicles/V003/treat")
@@ -241,12 +243,14 @@ async def test_report_degraded_success():
 @pytest.mark.asyncio
 async def test_report_degraded_not_found():
     """Reporting degradation on non-existent vehicle returns 404."""
+    from src.exceptions import NotFoundException
+    
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
         
         with patch("src.controllers.vehicles_controller.service.report_vehicle_degraded") as mock_report:
-            mock_report.side_effect = ValueError("Vehicle V999 not found")
+            mock_report.side_effect = NotFoundException("Vehicle V999 not found")
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post("/vehicles/V999/report-degraded")
@@ -257,12 +261,14 @@ async def test_report_degraded_not_found():
 @pytest.mark.asyncio
 async def test_treat_vehicle_needs_station():
     """Test treatment fails for degraded vehicle without station."""
+    from src.exceptions import ValidationException
+    
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
         
         with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
-            mock_treat.side_effect = ValueError("Must provide a station_id")
+            mock_treat.side_effect = ValidationException("Must provide a station_id")
             
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post("/vehicles/V004/treat")

@@ -54,5 +54,7 @@ async def test_create_user_conflict():
     service = UsersService(repository=mock_repo)
     mock_db = Mock()
 
-    with pytest.raises(ValueError, match="User already exists"):
+    from src.exceptions import ConflictException
+    
+    with pytest.raises(ConflictException, match="User already exists"):
         await service.create_user(mock_db, "USER001", "Test", "User", "test@example.com")

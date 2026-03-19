@@ -43,12 +43,14 @@ async def test_create_user_success():
 
 @pytest.mark.asyncio
 async def test_create_user_conflict():
+    from src.exceptions import ConflictException
+
     with patch("src.controllers.users_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
         with patch("src.controllers.users_controller.service.create_user") as mock_create_user:
-            mock_create_user.side_effect = ValueError("User already exists")
+            mock_create_user.side_effect = ConflictException("User already exists")
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post(
@@ -70,6 +72,7 @@ async def test_create_user_invalid_payload():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/users/register", json={})
 
-    assert response.status_code == 400
+    # FastAPI returns 422 for Pydantic validation errors
+    assert response.status_code == 422
     missing_fields = {error["loc"][-1] for error in response.json()["detail"]}
     assert {"user_id", "first_name", "last_name", "email"}.issubset(missing_fields)

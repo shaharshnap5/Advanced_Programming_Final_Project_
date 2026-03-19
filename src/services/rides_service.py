@@ -1,13 +1,13 @@
 import datetime
 import uuid
 import aiosqlite
-from fastapi import HTTPException
 from datetime import datetime
 
 from src.models.ride import Ride
 from src.services.stations_service import StationsService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
+from src.exceptions import NotFoundException
 
 
 
@@ -27,7 +27,7 @@ class RideService:
 
         if not nearest_station:
             # If absolutely no stations in the city have vehicles, we throw a 404
-            raise HTTPException(status_code=404, detail="No available vehicles found in the entire system.")
+            raise NotFoundException("No available vehicles found in the entire system.")
 
         # Get the station_id from the Station model
         station_id = nearest_station.station_id

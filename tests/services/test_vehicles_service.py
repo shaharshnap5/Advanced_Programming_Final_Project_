@@ -165,7 +165,9 @@ async def test_treat_vehicle_not_eligible():
     service = VehiclesService(repository=mock_repo)
     mock_db = Mock()
     
-    with pytest.raises(ValueError, match="not eligible for treatment"):
+    from src.exceptions import ValidationException
+
+    with pytest.raises(ValidationException, match="not eligible for treatment"):
         await service.treat_vehicle(mock_db, "V003")
 
 
@@ -180,7 +182,9 @@ async def test_treat_vehicle_degraded_needs_station():
     service = VehiclesService(repository=mock_repo)
     mock_db = Mock()
     
-    with pytest.raises(ValueError, match="Must provide a station_id"):
+    from src.exceptions import ValidationException
+    
+    with pytest.raises(ValidationException, match="Must provide a station_id"):
         await service.treat_vehicle(mock_db, "V004")
 
 

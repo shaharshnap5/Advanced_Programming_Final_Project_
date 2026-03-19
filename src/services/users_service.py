@@ -5,6 +5,7 @@ import aiosqlite
 
 from src.models.user import User
 from src.repositories.users_repository import UsersRepository
+from src.exceptions import ConflictException
 
 
 class UsersService:
@@ -29,7 +30,7 @@ class UsersService:
         """
         existing = await self._repository.get_by_id(db, user_id)
         if existing:
-            raise ValueError("User already exists")
+            raise ConflictException("User already exists")
 
         # Mocked billing token
         token = uuid.uuid4().hex

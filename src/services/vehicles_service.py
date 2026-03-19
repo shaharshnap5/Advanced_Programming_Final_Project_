@@ -4,6 +4,7 @@ import aiosqlite
 
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.models.vehicle import Vehicle, VehicleStatus
+from src.exceptions import NotFoundException, ValidationException
 
 class VehiclesService:
     def __init__(self, repository: VehiclesRepository | None = None) -> None:
@@ -22,7 +23,7 @@ class VehiclesService:
         """Marks a vehicle as degraded due to user report."""
         vehicle = await self.get_vehicle_by_id(db, vehicle_id)
         if not vehicle:
-            raise ValueError(f"Vehicle {vehicle_id} not found")
+            raise NotFoundException(f"Vehicle {vehicle_id} not found")
 
         if vehicle.status == VehicleStatus.degraded:
             return vehicle
@@ -47,14 +48,14 @@ class VehiclesService:
         # Get the vehicle
         vehicle = await self.get_vehicle_by_id(db, vehicle_id)
         if not vehicle:
-            raise ValueError(f"Vehicle {vehicle_id} not found")
+            raise NotFoundException(f"Vehicle {vehicle_id} not found")
 
         # Check eligibility for treatment
         is_degraded = vehicle.status == VehicleStatus.degraded
         rides_threshold_met = vehicle.rides_since_last_treated >= 7
 
         if not (is_degraded or rides_threshold_met):
-            raise ValueError(
+            raise ValidationException(
                 f"Vehicle {vehicle_id} is not eligible for treatment. "
                 f"Status: {vehicle.status}, Rides: {vehicle.rides_since_last_treated}. "
                 f"Must be degraded or have >= 7 rides."
@@ -62,7 +63,7 @@ class VehiclesService:
 
         # For previously degraded vehicles, a station must be assigned
         if is_degraded and not vehicle.station_id and not station_id:
-            raise ValueError(
+            raise ValidationException(
                 f"Vehicle {vehicle_id} was degraded without a station. "
                 f"Must provide a station_id to assign it a location."
             )
