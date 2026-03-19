@@ -146,7 +146,7 @@ class VehiclesRepository:
     async def get_available_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
         query = """
             SELECT * FROM vehicles 
-            WHERE station_id = ? AND status = 'available'
+            WHERE station_id = ? AND status = 'available' AND rides_since_last_treated <= 10
         """
         db.row_factory = aiosqlite.Row
         async with db.execute(query, (station_id,)) as cursor:

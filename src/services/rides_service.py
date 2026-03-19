@@ -35,11 +35,11 @@ class RideService:
         # 2. Ask the warehouse for ALL available vehicles at that specific station
         available_vehicles = await self.vehicles_repo.get_available_vehicles_by_station(db, station_id)
 
-        # 3. Apply the Deterministic Rule (Scooter > E-bike > Bike, then by ID)
+        # 3. Apply the Deterministic Rule (Bicycle > E-bike > Scooter, then by ID)
         type_priority = {
-            "scooter": 1,
+            "bicycle": 1,
             "electric_bicycle": 2,
-            "bicycle": 3
+            "scooter": 3
         }
 
         # 👇 FIX 1: Bracket notation inside the lambda function 👇

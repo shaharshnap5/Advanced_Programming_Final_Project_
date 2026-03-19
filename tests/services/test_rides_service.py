@@ -96,8 +96,8 @@ async def test_start_new_ride_no_available_station():
 
 
 @pytest.mark.asyncio
-async def test_start_new_ride_vehicle_type_priority_scooter():
-    """Test that scooters are prioritized over other vehicle types."""
+async def test_start_new_ride_vehicle_type_priority_bicycle():
+    """Test that bicycles are prioritized over other vehicle types."""
     mock_stations_service = Mock(spec=StationsService)
     mock_vehicles_repo = Mock(spec=VehiclesRepository)
     mock_rides_repo = Mock(spec=RidesRepository)
@@ -127,14 +127,14 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
 
     result = await service.start_new_ride(mock_db, user_id="USER001", lon=34.0, lat=32.0)
 
-    # Scooter should be selected
-    assert result.vehicle_id == "V002"
-    mock_vehicles_repo.mark_vehicle_as_rented.assert_called_with(mock_db, "V002")
+    # Bicycle should be selected
+    assert result.vehicle_id == "V001"
+    mock_vehicles_repo.mark_vehicle_as_rented.assert_called_with(mock_db, "V001")
 
 
 @pytest.mark.asyncio
 async def test_start_new_ride_vehicle_type_priority_ebike():
-    """Test that e-bikes are prioritized over bicycles."""
+    """Test that bicycles are prioritized over e-bikes."""
     mock_stations_service = Mock(spec=StationsService)
     mock_vehicles_repo = Mock(spec=VehiclesRepository)
     mock_rides_repo = Mock(spec=RidesRepository)
@@ -163,8 +163,8 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
 
     result = await service.start_new_ride(mock_db, user_id="USER001", lon=34.0, lat=32.0)
 
-    # E-bike should be selected
-    assert result.vehicle_id == "V003"
+    # Bicycle should be selected (prioritized over e-bike)
+    assert result.vehicle_id == "V001"
 
 
 @pytest.mark.asyncio
@@ -178,12 +178,12 @@ async def test_start_new_ride_vehicle_id_sorting():
         return_value=Station(station_id=1, name="Station 1", lat=32.0, lon=34.0, max_capacity=10)
     )
 
-    # Return multiple scooters
+    # Return multiple bicycles
     mock_vehicles_repo.get_available_vehicles_by_station = AsyncMock(
         return_value=[
-            Vehicle(vehicle_id="SCOOTER003", vehicle_type=VehicleType.scooter, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
-            Vehicle(vehicle_id="SCOOTER001", vehicle_type=VehicleType.scooter, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
-            Vehicle(vehicle_id="SCOOTER002", vehicle_type=VehicleType.scooter, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="BIKE003", vehicle_type=VehicleType.bike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="BIKE001", vehicle_type=VehicleType.bike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="BIKE002", vehicle_type=VehicleType.bike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
         ]
     )
 
@@ -199,8 +199,8 @@ async def test_start_new_ride_vehicle_id_sorting():
 
     result = await service.start_new_ride(mock_db, user_id="USER001", lon=34.0, lat=32.0)
 
-    # Should pick the scooter with the lowest ID
-    assert result.vehicle_id == "SCOOTER001"
+    # Should pick the bicycle with the lowest ID
+    assert result.vehicle_id == "BIKE001"
 
 
 @pytest.mark.asyncio
