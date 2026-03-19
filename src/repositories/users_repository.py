@@ -59,15 +59,3 @@ class UsersRepository:
     async def clear_current_ride(self, db: aiosqlite.Connection, user_id: str) -> bool:
         """Clear the user's current active ride (set to NULL)."""
         return await self.update_current_ride_id(db, user_id, None)
-
-    async def list_active_users(self, db: aiosqlite.Connection) -> list[str]:
-        """Return list of user_ids that have active rides (current_ride_id IS NOT NULL)."""
-        cursor = await db.execute(
-            """
-            SELECT user_id FROM users
-            WHERE current_ride_id IS NOT NULL
-            """
-        )
-        rows = await cursor.fetchall()
-        await cursor.close()
-        return [row[0] for row in rows]

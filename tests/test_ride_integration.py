@@ -287,7 +287,6 @@ async def test_vehicle_dock_state_transitions(test_db):
     
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=[])
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.5, lat=32.5)
@@ -331,7 +330,6 @@ async def test_payment_logic_normal_ride(test_db):
     
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=[])
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_NORMAL", lon=34.5, lat=32.5)
@@ -363,7 +361,6 @@ async def test_nearest_station_calculation(test_db):
     ]
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=[])
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.1, lat=32.1)

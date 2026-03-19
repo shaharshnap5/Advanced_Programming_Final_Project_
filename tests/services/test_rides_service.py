@@ -405,7 +405,6 @@ async def test_end_ride_payment_fixed_15_ils():
         {"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=[])
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
@@ -431,7 +430,6 @@ async def test_end_ride_selects_nearest_station():
         {"station_id": 3, "name": "S3", "lat": 31.0, "lon": 33.0, "max_capacity": 10, "current_capacity": 5},
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=[])
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE001", lon=34.1, lat=32.1)

@@ -24,15 +24,12 @@ Windows (PowerShell):
 
 `python .\scripts\init_db.py`
 
-<<<<<<< SCRUM-27-Ride-Completion-POST-ride-end
 macOS/Linux (bash/zsh):
 
 `python ./scripts/init_db.py`
-=======
 Reset the database (drop all tables and recreate):
 
 `python .\scripts\init_db.py --reset-db`
->>>>>>> main
 
 See [docs/DB_SETUP.md](docs/DB_SETUP.md) for full details.
 
