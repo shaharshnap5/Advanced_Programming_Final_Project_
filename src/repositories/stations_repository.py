@@ -53,3 +53,25 @@ class StationsRepository:
         async with db.execute(query) as cursor:
             rows = await cursor.fetchall()
             return [Station(**dict(row)) for row in rows]
+
+    async def list_with_capacity(self, db: aiosqlite.Connection) -> list[dict]:
+        """
+        List all stations with their current capacity.
+        Returns: list of dicts with station_id, name, lat, lon, max_capacity, current_capacity
+        """
+        query = """
+            SELECT
+                s.station_id,
+                s.name,
+                s.lat,
+                s.lon,
+                s.max_capacity,
+                COALESCE(COUNT(v.vehicle_id), 0) as current_capacity
+            FROM stations s
+            LEFT JOIN vehicles v ON s.station_id = v.station_id
+            GROUP BY s.station_id
+        """
+        cursor = await db.execute(query)
+        rows = await cursor.fetchall()
+        await cursor.close()
+        return [dict(row) for row in rows]

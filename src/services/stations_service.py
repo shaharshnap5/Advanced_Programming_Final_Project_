@@ -35,3 +35,7 @@ class StationsService:
         )
 
         return nearest_station
+
+    async def get_stations_with_capacity(self, db: aiosqlite.Connection) -> list[dict]:
+        """Return list of stations with their current capacity info."""
+        return await self._repository.list_with_capacity(db)

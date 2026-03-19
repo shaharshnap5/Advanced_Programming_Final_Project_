@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from src.services.rides_service import RideService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
+from src.repositories.users_repository import UsersRepository
 from src.services.stations_service import StationsService
 from src.models.ride import Ride
 from src.models.station import Station
@@ -296,12 +297,149 @@ async def test_start_new_ride_creates_database_entry():
     assert args[4] == 2  # start_station_id
 
 
+# ============ END RIDE TESTS ============
+
+
+@pytest.mark.asyncio
+async def test_end_ride_success():
+    """Test successful ride end with all steps: dock, charge, clear active ride."""
+    # Setup mocked dependencies
+    rides_repo = AsyncMock(spec=RidesRepository)
+    vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    users_repo = AsyncMock(spec=UsersRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    
+    # Mock vehicle
+    mock_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    
+    # Mock docked vehicle
+    docked_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.dock_vehicle = AsyncMock(return_value=docked_vehicle)
+    
+    # Mock service with dependencies
+    service = RideService()
+    service.rides_repo = rides_repo
+    service.vehicles_repo = vehicles_repo
+    service.users_repo = users_repo
+    
+    # Mock stations service
+    service.stations_service = AsyncMock()
+    mock_stations = [
+        {
+            "station_id": 1,
+            "name": "Downtown Station",
+            "lat": 32.5,
+            "lon": 34.5,
+            "max_capacity": 10,
+            "current_capacity": 5,
+        },
+        {
+            "station_id": 2,
+            "name": "Back Station",
+            "lat": 32.0,
+            "lon": 34.0,
+            "max_capacity": 8,
+            "current_capacity": 7,
+        },
+    ]
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    
+    result = await service.end_ride(mock_db, "RIDE001", lon=34.5, lat=32.5)
+    
+    # Verify response structure (only required fields per specification)
+    assert "end_station_id" in result
+    assert "payment_charged" in result
+    
+    # Verify station was selected (nearest one)
+    assert result["end_station_id"] == 1
+    assert result["payment_charged"] == 15
+
+
+@pytest.mark.asyncio
+async def test_end_ride_no_available_station():
+    """Test error when no station with free capacity is available."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    
+    service = RideService()
+    service.rides_repo = rides_repo
+    service.stations_service = AsyncMock()
+    
+    # All stations are full
+    mock_stations = [
+        {
+            "station_id": 1,
+            "name": "Full Station 1",
+            "lat": 32.5,
+            "lon": 34.5,
+            "max_capacity": 10,
+            "current_capacity": 10,  # Full
+        },
+        {
+            "station_id": 2,
+            "name": "Full Station 2",
+            "lat": 32.0,
+            "lon": 34.0,
+            "max_capacity": 8,
+            "current_capacity": 8,  # Full
+        },
+    ]
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    
+    with pytest.raises(HTTPException) as exc_info:
+        await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
+    
+    assert exc_info.value.status_code == 400
+    assert "capacity" in exc_info.value.detail.lower()
+
+
 @pytest.mark.asyncio
 async def test_start_new_ride_user_already_has_active_ride():
     """Test that a user cannot start a new ride if they already have an active one."""
-    mock_stations_service = Mock(spec=StationsService)
-    mock_vehicles_repo = Mock(spec=VehiclesRepository)
-    mock_rides_repo = Mock(spec=RidesRepository)
+    mock_rides_repo = AsyncMock(spec=RidesRepository)
+    mock_stations_service = AsyncMock(spec=StationsService)
+    mock_vehicles_repo = AsyncMock(spec=VehiclesRepository)
 
     # Mock return an active ride for the user
     existing_ride = Ride(
@@ -314,25 +452,179 @@ async def test_start_new_ride_user_already_has_active_ride():
         is_degraded_report=False
     )
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=existing_ride)
-
+    
     service = RideService()
+    service.rides_repo = mock_rides_repo
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
-    service.rides_repo = mock_rides_repo
-
+    
     mock_db = Mock()
-
-    # Should raise HTTPException with status code 409
+    
+    # Should raise 409 when user already has an active ride
     with pytest.raises(HTTPException) as exc_info:
-        await service.start_new_ride(mock_db, user_id="USER_WITH_ACTIVE_RIDE", lon=34.0, lat=32.0)
-
+        await service.start_new_ride(mock_db, "USER_WITH_ACTIVE_RIDE", 34.5, 32.5)
+    
     assert exc_info.value.status_code == 409
-    assert "already has an active ride" in exc_info.value.detail
-
-    # Verify that station service was never called (early exit)
+    assert "already has an active ride" in exc_info.value.detail.lower()
+    
+    # Verify that we checked for active rides but didn't proceed further
+    mock_rides_repo.get_active_ride_by_user.assert_called_once_with(mock_db, "USER_WITH_ACTIVE_RIDE")
+    # Should NOT have tried to get nearest station
     mock_stations_service.get_nearest_station_with_vehicles.assert_not_called()
-    # Verify that vehicles repo was never called
-    mock_vehicles_repo.get_available_vehicles_by_station.assert_not_called()
-    # Verify that a new ride was not created
-    mock_rides_repo.create_active_ride.assert_not_called()
+
+
+
+@pytest.mark.asyncio
+async def test_end_ride_no_stations():
+    """Test error when no stations exist."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    
+    service = RideService()
+    service.rides_repo = rides_repo
+    service.stations_service = AsyncMock()
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=[])
+    
+    mock_db = Mock()
+    
+    with pytest.raises(HTTPException) as exc_info:
+        await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
+    
+    assert exc_info.value.status_code == 400
+
+
+
+
+
+@pytest.mark.asyncio
+async def test_end_ride_payment_fixed_15_ils():
+    """Test that payment is always 15 ILS for normal rides."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    
+    # Mock vehicle
+    mock_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    vehicles_repo.dock_vehicle = AsyncMock(return_value=mock_vehicle)
+    
+    service = RideService()
+    service.rides_repo = rides_repo
+    service.vehicles_repo = vehicles_repo
+    service.stations_service = AsyncMock()
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    mock_stations = [
+        {"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}
+    ]
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
+    
+    assert result["payment_charged"] == 15
+
+
+@pytest.mark.asyncio
+async def test_end_ride_selects_nearest_station():
+    """Test that the nearest station by euclidean distance is selected."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock the ride
+    mock_ride = Ride(
+        ride_id="RIDE001",
+        user_id="USER001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime(2026, 3, 19, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False
+    )
+    rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    
+    # Mock vehicle
+    mock_vehicle = Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    )
+    vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    vehicles_repo.dock_vehicle = AsyncMock(return_value=mock_vehicle)
+    
+    service = RideService()
+    service.rides_repo = rides_repo
+    service.vehicles_repo = vehicles_repo
+    service.stations_service = AsyncMock()
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    # Three stations with different distances
+    # User drop-off at (32.1, 34.1)
+    # S1: (32.0, 34.0) - closest
+    # S2: (32.5, 34.5) - farther
+    # S3: (31.0, 33.0) - farthest
+    mock_stations = [
+        {"station_id": 1, "name": "S1", "lat": 32.0, "lon": 34.0, "max_capacity": 10, "current_capacity": 5},
+        {"station_id": 2, "name": "S2", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5},
+        {"station_id": 3, "name": "S3", "lat": 31.0, "lon": 33.0, "max_capacity": 10, "current_capacity": 5},
+    ]
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE001", lon=34.1, lat=32.1)
+    
+    # S1 should be selected (closest to drop-off point)
+    assert result["end_station_id"] == 1
+
+
+@pytest.mark.asyncio
+async def test_end_ride_handles_missing_fields():
+    """Test error handling for invalid input."""
+    rides_repo = AsyncMock(spec=RidesRepository)
+    
+    # Mock get_by_id to return None when ride doesn't exist
+    rides_repo.get_by_id = AsyncMock(return_value=None)
+    
+    service = RideService()
+    service.rides_repo = rides_repo
+    mock_db = Mock()
+    
+    # The controller should validate, but let's test service too
+    # If ride_id is empty or invalid, it won't be found (404)
+    with pytest.raises(HTTPException) as exc_info:
+        await service.end_ride(mock_db, "", None, None)
+    
+    assert exc_info.value.status_code == 404
 

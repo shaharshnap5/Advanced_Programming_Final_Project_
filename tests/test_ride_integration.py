@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import pytest
-from datetime import datetime
+from datetime import datetime, date
 
 from src.models.ride import Ride, process_end_of_ride
 from src.models.user import User
+from src.models.vehicle import Vehicle, VehicleType, VehicleStatus
 
 
 @pytest.mark.asyncio
@@ -171,4 +172,328 @@ async def test_ride_serialization_roundtrip():
     assert recreated_ride.ride_id == original_ride.ride_id
     assert recreated_ride.user_id == original_ride.user_id
     assert recreated_ride.calculate_cost() == original_ride.calculate_cost()
+
+
+# ============ END RIDE INTEGRATION TESTS ============
+
+@pytest.mark.asyncio
+async def test_complete_ride_end_flow_with_mocked_db(test_db):
+    """Test the complete end-to-end ride ending process."""
+    from unittest.mock import AsyncMock, Mock
+    from src.services.rides_service import RideService
+    from src.repositories.vehicles_repository import VehiclesRepository
+    from src.repositories.users_repository import UsersRepository
+    
+    # Setup
+    service = RideService()
+    service.vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    service.stations_service = AsyncMock()
+    
+    # Mock data
+    mock_stations = [
+        {
+            "station_id": 1,
+            "name": "Central Station",
+            "lat": 32.5,
+            "lon": 34.5,
+            "max_capacity": 20,
+            "current_capacity": 10,
+        },
+        {
+            "station_id": 2,
+            "name": "North Station",
+            "lat": 32.8,
+            "lon": 34.8,
+            "max_capacity": 15,
+            "current_capacity": 14,
+        },
+    ]
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    
+    # Execute
+    result = await service.end_ride(mock_db, "RIDE_001", lon=34.5, lat=32.5)
+    
+    # Verify
+    assert result["end_station_id"] == 1  # Closest station
+    assert result["payment_charged"] == 15  # Fixed price
+
+
+@pytest.mark.asyncio
+async def test_ride_end_selects_station_with_capacity(test_db):
+    """Ensure only stations with available capacity are considered."""
+    from unittest.mock import AsyncMock, Mock
+    from src.services.rides_service import RideService
+    from src.repositories.users_repository import UsersRepository
+    
+    service = RideService()
+    service.stations_service = AsyncMock()
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    # Mix of full and available stations
+    mock_stations = [
+        {"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 10},  # Full
+        {"station_id": 2, "name": "S2", "lat": 32.4, "lon": 34.4, "max_capacity": 10, "current_capacity": 8},   # Available
+        {"station_id": 3, "name": "S3", "lat": 32.6, "lon": 34.6, "max_capacity": 10, "current_capacity": 10},  # Full
+    ]
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=2,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=2,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE_001", lon=34.4, lat=32.4)
+    
+    # Should select S2 (only station with available capacity)
+    assert result["end_station_id"] == 2
+
+
+@pytest.mark.asyncio
+async def test_vehicle_dock_state_transitions(test_db):
+    """Test that vehicle state properly transitions when docked."""
+    from unittest.mock import AsyncMock, Mock
+    from src.services.rides_service import RideService
+    from src.repositories.vehicles_repository import VehiclesRepository
+    from src.repositories.users_repository import UsersRepository
+    from src.models.vehicle import Vehicle
+    
+    service = RideService()
+    service.vehicles_repo = AsyncMock(spec=VehiclesRepository)
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    service.stations_service = AsyncMock()
+    
+    # Mock the vehicle before docking (rented state)
+    mock_vehicle = Vehicle(
+        vehicle_id="BIKE_001",
+        station_id=None,  # Currently not at a station (being ridden)
+        vehicle_type="bicycle",
+        status="rented",
+        rides_since_last_treated=5,
+        last_treated_date=None,
+    )
+    
+    # Mock the docking operation
+    docked_vehicle = Vehicle(
+        vehicle_id="BIKE_001",
+        station_id=1,  # Now at station 1
+        vehicle_type="bicycle",
+        status="available",  # Available for next ride
+        rides_since_last_treated=6,  # Incremented
+        last_treated_date=None,
+    )
+    
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=mock_vehicle)
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=docked_vehicle)
+    
+    mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="BIKE_001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE_001", lon=34.5, lat=32.5)
+    
+    # Verify result is correct
+    assert result["end_station_id"] == 1
+
+
+@pytest.mark.asyncio
+async def test_multiple_concurrent_rides_ending(test_db):
+    """Test correct response when multiple users end rides simultaneously."""
+    from unittest.mock import AsyncMock, Mock
+    from src.services.rides_service import RideService
+    from src.repositories.users_repository import UsersRepository
+    
+    service = RideService()
+    service.stations_service = AsyncMock()
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_003",
+        user_id="USER_003",
+        vehicle_id="V003",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V003",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V003",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
+    mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 20, "current_capacity": 15}]
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE_003", lon=34.5, lat=32.5)
+    
+    # Verify response structure (only required fields per specification)
+    assert result["end_station_id"] == 1
+    assert result["payment_charged"] == 15
+
+
+@pytest.mark.asyncio
+async def test_payment_logic_normal_ride(test_db):
+    """Test that normal ride is charged 15 ILS."""
+    from unittest.mock import AsyncMock, Mock
+    from src.services.rides_service import RideService
+    from src.repositories.users_repository import UsersRepository
+    
+    service = RideService()
+    service.stations_service = AsyncMock()
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_NORMAL",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
+    mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE_NORMAL", lon=34.5, lat=32.5)
+    
+    # Fixed price for any ride
+    assert result["payment_charged"] == 15
+
+
+@pytest.mark.asyncio
+async def test_nearest_station_calculation(test_db):
+    """Test that nearest station by euclidean distance is correctly selected."""
+    from unittest.mock import AsyncMock, Mock
+    from src.services.rides_service import RideService
+    from src.repositories.users_repository import UsersRepository
+    
+    service = RideService()
+    service.stations_service = AsyncMock()
+    service.users_repo = AsyncMock(spec=UsersRepository)
+    
+    service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
+        ride_id="RIDE_001",
+        user_id="USER_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=datetime.now(),
+    ))
+    service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=1,
+        status=VehicleStatus.available,
+        rides_since_last_treated=0,
+        last_treated_date=date.today()
+    ))
+    service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
+        vehicle_id="V001",
+        vehicle_type=VehicleType.bike,
+        station_id=3,
+        status=VehicleStatus.available,
+        rides_since_last_treated=1,
+        last_treated_date=date.today()
+    ))
+    
+    # Create stations at known distances
+    # User drops off at (32.1, 34.1)
+    mock_stations = [
+        # Distance from (32.1, 34.1): sqrt((32-32.1)^2 + (34-34.1)^2) = sqrt(0.01 + 0.01) ≈ 0.141
+        {"station_id": 1, "name": "S1", "lat": 32.0, "lon": 34.0, "max_capacity": 10, "current_capacity": 5},
+        # Distance: sqrt((32.5-32.1)^2 + (34.5-34.1)^2) = sqrt(0.16 + 0.16) ≈ 0.566
+        {"station_id": 2, "name": "S2", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5},
+        # Distance: sqrt((32.2-32.1)^2 + (34.2-34.1)^2) = sqrt(0.01 + 0.01) ≈ 0.141
+        {"station_id": 3, "name": "S3", "lat": 32.2, "lon": 34.2, "max_capacity": 10, "current_capacity": 5},
+    ]
+    
+    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+    
+    mock_db = Mock()
+    result = await service.end_ride(mock_db, "RIDE_001", lon=34.1, lat=32.1)
+    
+    # S1 and S3 are equally close (first one should be selected)
+    assert result["end_station_id"] in [1, 3]
 

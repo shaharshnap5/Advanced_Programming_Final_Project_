@@ -38,3 +38,24 @@ class UsersRepository:
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
+
+    async def update_current_ride_id(
+        self, db: aiosqlite.Connection, user_id: str, ride_id: str | None
+    ) -> bool:
+        """Update or clear the user's current active ride."""
+        cursor = await db.execute(
+            """
+            UPDATE users
+            SET current_ride_id = ?
+            WHERE user_id = ?
+            """,
+            (ride_id, user_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        return affected > 0
+
+    async def clear_current_ride(self, db: aiosqlite.Connection, user_id: str) -> bool:
+        """Clear the user's current active ride (set to NULL)."""
+        return await self.update_current_ride_id(db, user_id, None)
