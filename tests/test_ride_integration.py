@@ -210,7 +210,6 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
     ]
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=["USER_002", "USER_003", "USER_004"])
     
     mock_db = Mock()
     
@@ -220,8 +219,6 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
     # Verify
     assert result["end_station_id"] == 1  # Closest station
     assert result["payment_charged"] == 15  # Fixed price
-    assert len(result["active_users"]) == 3
-    assert "USER_002" in result["active_users"]
 
 
 @pytest.mark.asyncio
@@ -243,7 +240,6 @@ async def test_ride_end_selects_station_with_capacity(test_db):
     ]
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    service.users_repo.list_active_users = AsyncMock(return_value=[])
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.4, lat=32.4)
@@ -302,7 +298,7 @@ async def test_vehicle_dock_state_transitions(test_db):
 
 @pytest.mark.asyncio
 async def test_multiple_concurrent_rides_ending(test_db):
-    """Test correct user list when multiple users end rides simultaneously."""
+    """Test correct response when multiple users end rides simultaneously."""
     from unittest.mock import AsyncMock, Mock
     from src.services.rides_service import RideService
     from src.repositories.users_repository import UsersRepository
@@ -314,17 +310,12 @@ async def test_multiple_concurrent_rides_ending(test_db):
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 20, "current_capacity": 15}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     
-    # Simulate 5 active users
-    service.users_repo.list_active_users = AsyncMock(return_value=[
-        "USER_001", "USER_002", "USER_003", "USER_004", "USER_005"
-    ])
-    
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_003", lon=34.5, lat=32.5)
     
-    # All 5 users should be in active list
-    assert len(result["active_users"]) == 5
-    assert result["active_users"] == ["USER_001", "USER_002", "USER_003", "USER_004", "USER_005"]
+    # Verify response structure (only required fields per specification)
+    assert result["end_station_id"] == 1
+    assert result["payment_charged"] == 15
 
 
 @pytest.mark.asyncio

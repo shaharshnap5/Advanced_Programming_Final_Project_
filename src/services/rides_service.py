@@ -95,7 +95,6 @@ class RideService:
         4. Increment vehicle's ride counter (sets to degraded if > 10)
         5. Charge the user 15 ILS (0 if degraded report)
         6. Clear user's active ride
-        7. Return response with station_id, payment_charged, and active users list
         """
         
         # Step 1: Verify ride exists
@@ -134,12 +133,8 @@ class RideService:
         # For now, return a fixed 15 ILS
         payment_charged = 15
         
-        # Step 6: Get list of remaining active users (excluding this user)
-        active_users = await self.users_repo.list_active_users(db)
-        
-        # Return response object
+        # Return response object (only required fields per specification)
         return {
             "end_station_id": station_id,
             "payment_charged": payment_charged,
-            "active_users": active_users,
         }

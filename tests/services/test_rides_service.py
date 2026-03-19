@@ -327,22 +327,17 @@ async def test_end_ride_success():
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     
-    # Mock users list
-    users_repo.list_active_users = AsyncMock(return_value=["USER_002", "USER_003"])
-    
     mock_db = Mock()
     
     result = await service.end_ride(mock_db, "RIDE001", lon=34.5, lat=32.5)
     
-    # Verify response structure
+    # Verify response structure (only required fields per specification)
     assert "end_station_id" in result
     assert "payment_charged" in result
-    assert "active_users" in result
     
     # Verify station was selected (nearest one)
     assert result["end_station_id"] == 1
     assert result["payment_charged"] == 15
-    assert result["active_users"] == ["USER_002", "USER_003"]
 
 
 @pytest.mark.asyncio
@@ -396,26 +391,7 @@ async def test_end_ride_no_stations():
     assert exc_info.value.status_code == 400
 
 
-@pytest.mark.asyncio
-async def test_end_ride_returns_active_users():
-    """Test that response includes list of remaining active users."""
-    service = RideService()
-    service.stations_service = AsyncMock()
-    service.users_repo = AsyncMock(spec=UsersRepository)
-    
-    mock_stations = [
-        {"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}
-    ]
-    service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
-    # Mock 3 active users
-    service.users_repo.list_active_users = AsyncMock(return_value=["USER_A", "USER_B", "USER_C"])
-    
-    mock_db = Mock()
-    result = await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
-    
-    assert len(result["active_users"]) == 3
-    assert "USER_A" in result["active_users"]
+
 
 
 @pytest.mark.asyncio

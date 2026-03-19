@@ -59,7 +59,6 @@ async def end_ride(
     Returns:
     - end_station_id: int - The ID of the station where vehicle was docked
     - payment_charged: int - The amount charged (15 ILS for normal ride, 0 for degraded)
-    - active_users: list[str] - List of user IDs still in active rides
     """
     try:
         # Validate payload
