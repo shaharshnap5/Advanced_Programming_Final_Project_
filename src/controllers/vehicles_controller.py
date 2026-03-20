@@ -74,6 +74,12 @@ async def report_degraded(vehicle_id: str,
         updated = await service.report_vehicle_degraded(db, vehicle_id)
         return updated
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=404, detail=error_msg)
+        elif "already marked as degraded" in error_msg:
+            raise HTTPException(status_code=409, detail=error_msg)
+        else:
+            raise HTTPException(status_code=400, detail=error_msg)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

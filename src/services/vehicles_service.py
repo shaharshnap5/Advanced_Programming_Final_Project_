@@ -25,7 +25,7 @@ class VehiclesService:
             raise ValueError(f"Vehicle {vehicle_id} not found")
 
         if vehicle.status == VehicleStatus.degraded:
-            return vehicle
+            raise ValueError(f"Vehicle {vehicle_id} is already marked as degraded")
 
         success = await self._repository.update_vehicle_status(db, vehicle_id, VehicleStatus.degraded)
         if not success:
