@@ -10,7 +10,6 @@ from src.db import get_db  # Adjust this import based on where your get_db funct
 
 # Create the router
 router = APIRouter(prefix="/rides", tags=["Rides"])
-legacy_router = APIRouter(prefix="/ride", tags=["Rides"])
 
 service = RideService()
 
@@ -51,14 +50,6 @@ async def start_ride(
     except Exception as e:
         # Catch any unexpected crashes
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@legacy_router.post("/start", response_model=Ride, include_in_schema=False)
-async def start_ride_legacy(
-        request: RideStartRequest,
-        db: aiosqlite.Connection = Depends(get_db)
-):
-    return await start_ride(request, db)
 
 
 @router.post("/end", response_model=EndRideResponse)
