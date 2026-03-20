@@ -315,8 +315,8 @@ async def test_vehicle_dock_state_transitions(test_db):
     mock_vehicle = Vehicle(
         vehicle_id="BIKE_001",
         station_id=None,  # Currently not at a station (being ridden)
-        vehicle_type="bicycle",
-        status="rented",
+        vehicle_type=VehicleType.bike,
+        status=VehicleStatus.rented,
         rides_since_last_treated=5,
         last_treated_date=None,
     )
@@ -325,8 +325,8 @@ async def test_vehicle_dock_state_transitions(test_db):
     docked_vehicle = Vehicle(
         vehicle_id="BIKE_001",
         station_id=1,  # Now at station 1
-        vehicle_type="bicycle",
-        status="available",  # Available for next ride
+        vehicle_type=VehicleType.bike,
+        status=VehicleStatus.available,  # Available for next ride
         rides_since_last_treated=6,  # Incremented
         last_treated_date=None,
     )

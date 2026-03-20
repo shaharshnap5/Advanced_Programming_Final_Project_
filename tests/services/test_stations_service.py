@@ -54,13 +54,15 @@ async def test_get_nearest_station():
         "max_capacity": 10,
         "distance": 0.01
     })
+    mock_vehicles_repo = Mock()
+    mock_vehicles_repo.get_available_vehicles_by_station = AsyncMock(return_value=[])
     
-    service = StationsService(repository=mock_repo)
+    service = StationsService(repository=mock_repo, vehicles_repository=mock_vehicles_repo)
     mock_db = Mock()
     
     result = await service.get_nearest_station(mock_db, lon=34.0, lat=32.0)
     
     assert result is not None
-    assert result["station_id"] == 1
-    assert "distance" in result
+    assert result.station_id == 1
+    assert result.distance == 0.01
     mock_repo.get_nearest.assert_called_once_with(mock_db, lon=34.0, lat=32.0)

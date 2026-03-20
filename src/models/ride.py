@@ -22,7 +22,7 @@ class Ride(BaseModel):
         return 15  # Constant 15 ILS for a normal ride
 
 
-# --- Inside FleetManager or API endpoint for ending a ride ---
+# --- Inside API endpoint for ending a ride ---
 
 def process_end_of_ride(user: User, ride: Ride):
     """Processes the end of a ride by calculating the cost and charging the user."""

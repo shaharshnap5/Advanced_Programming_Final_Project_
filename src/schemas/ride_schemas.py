@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from src.models.vehicle import Vehicle
 
 
 class RideStartRequest(BaseModel):
@@ -17,8 +18,7 @@ class EndRidePayload(BaseModel):
 
 
 class EndRideResponse(BaseModel):
-    """Response after ending a ride."""
     end_station_id: int
     payment_charged: int
-    active_users: list[str]
+    vehicle: Vehicle
 
