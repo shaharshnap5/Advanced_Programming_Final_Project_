@@ -9,7 +9,7 @@ from src.services.rides_service import RideService
 from src.db import get_db  # Adjust this import based on where your get_db function lives
 
 # Create the router
-router = APIRouter(prefix="/ride", tags=["Rides"])
+router = APIRouter(prefix="/rides", tags=["Rides"])
 
 service = RideService()
 
