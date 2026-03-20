@@ -4,8 +4,8 @@ from src.models.vehicle import Vehicle
 
 class RideStartRequest(BaseModel):
     user_id: str
-    lon: float
-    lat: float
+    lon: float | None = None
+    lat: float | None = None
 
 
 class ActiveUsersResponse(BaseModel):

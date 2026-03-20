@@ -52,6 +52,8 @@ async def test_start_new_ride_success():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -87,6 +89,8 @@ async def test_start_new_ride_no_available_station():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -126,6 +130,8 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -163,6 +169,8 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -200,6 +208,8 @@ async def test_start_new_ride_vehicle_id_sorting():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -234,6 +244,8 @@ async def test_start_new_ride_returns_correct_model():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -292,6 +304,8 @@ async def test_start_new_ride_creates_database_entry():
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
     service.rides_repo = mock_rides_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
 
     mock_db = Mock()
 
@@ -470,6 +484,8 @@ async def test_start_new_ride_user_already_has_active_ride():
     service.rides_repo = mock_rides_repo
     service.stations_service = mock_stations_service
     service.vehicles_repo = mock_vehicles_repo
+    service.users_repo = Mock(spec=UsersRepository)
+    service.users_repo.get_by_id = AsyncMock(return_value=Mock())
     
     mock_db = Mock()
     
