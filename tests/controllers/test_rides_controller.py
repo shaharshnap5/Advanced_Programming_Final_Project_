@@ -176,7 +176,7 @@ async def test_get_active_users_via_api():
             ]
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.get("/ride/active-users")
+                response = await client.get("/rides/active-users")
 
             assert response.status_code == 200
             assert response.json() == [
@@ -217,7 +217,7 @@ async def test_end_ride_endpoint_valid_payload():
             "active_users": ["USER_A", "USER_B"],
         }
         
-        response = client.post("/ride/end", json=payload)
+        response = client.post("/rides/end", json=payload)
         
         assert response.status_code == 200
         data = response.json()
@@ -240,7 +240,7 @@ async def test_end_ride_endpoint_missing_ride_id():
         # Missing: "ride_id"
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     # Pydantic validation should fail
     assert response.status_code == 422
@@ -259,7 +259,7 @@ async def test_end_ride_endpoint_missing_lon():
         # Missing: "lon"
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     assert response.status_code == 422
 
@@ -277,7 +277,7 @@ async def test_end_ride_endpoint_missing_lat():
         # Missing: "lat"
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     assert response.status_code == 422
 
@@ -289,7 +289,7 @@ async def test_end_ride_endpoint_invalid_json():
     from src.main import app
     
     client = TestClient(app)
-    response = client.post("/ride/end", content="{invalid json")
+    response = client.post("/rides/end", content="{invalid json")
     
     # FastAPI returns 422 for validation errors  
     assert response.status_code == 422
@@ -308,7 +308,7 @@ async def test_end_ride_endpoint_wrong_types():
         "lat": 32.5,
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     assert response.status_code == 422
 
@@ -329,7 +329,7 @@ async def test_end_ride_endpoint_service_error():
     with patch("src.controllers.rides_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
         mock_end_ride.side_effect = HTTPException(status_code=404, detail="Ride not found")
         
-        response = client.post("/ride/end", json=payload)
+        response = client.post("/rides/end", json=payload)
         
         assert response.status_code == 404
         assert "Ride not found" in response.json()["detail"]
@@ -355,7 +355,7 @@ async def test_end_ride_endpoint_response_structure():
             "active_users": [],
         }
         
-        response = client.post("/ride/end", json=payload)
+        response = client.post("/rides/end", json=payload)
         
         assert response.status_code == 200
         data = response.json()
