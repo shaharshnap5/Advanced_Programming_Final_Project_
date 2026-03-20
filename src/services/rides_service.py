@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from datetime import datetime
 
 from src.models.ride import Ride
+from src.models.user import User
 from src.services.stations_service import StationsService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
@@ -17,7 +18,6 @@ from src.models.lock_manager import LockManager
 
 class RideService:
     def __init__(self):
-        # Initialize the warehouse workers
         self.vehicles_repo = VehiclesRepository()
         self.rides_repo = RidesRepository()
         self.stations_service = StationsService()
@@ -25,6 +25,9 @@ class RideService:
         self.users_repo = UsersRepository()
         self.lock_manager = LockManager()
 
+    async def list_active_users(self, db: aiosqlite.Connection) -> list[User]:
+        """Return User objects currently in active rides."""
+        return await self.rides_repo.get_active_users(db)
 
     async def start_new_ride(
             self, db: aiosqlite.Connection, user_id: str, lon: float, lat: float

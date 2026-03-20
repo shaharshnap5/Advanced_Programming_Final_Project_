@@ -2,16 +2,24 @@ from fastapi import APIRouter, HTTPException, Depends
 import aiosqlite
 
 from src.schemas.ride_schemas import RideStartRequest, EndRidePayload, EndRideResponse
-from src.models.ride import Ride
+from src.models.ride import Ride, User
 from src.services.rides_service import RideService
 
 # 3. Import your database connection dependency
 from src.db import get_db  # Adjust this import based on where your get_db function lives
 
 # Create the router
-router = APIRouter(prefix="/ride", tags=["Rides"])
+router = APIRouter(prefix="/rides", tags=["Rides"])
 
 service = RideService()
+
+
+@router.get("/active-users", response_model=list[User])
+async def get_active_users() -> list[User]:
+    """Return all users who are currently in the middle of a ride."""
+    async with get_db() as db:
+        active_users = await service.list_active_users(db)
+    return active_users
 
 @router.post("/start", response_model=Ride)  # Make sure this matches your return schema
 async def start_ride(
