@@ -12,12 +12,6 @@ class VehiclesService:
     async def get_vehicle_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
         return await self._repository.get_by_id(db, vehicle_id)
 
-    async def list_vehicles(self, db: aiosqlite.Connection) -> list[Vehicle]:
-        return await self._repository.list_all(db)
-
-    async def list_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
-        return await self._repository.list_by_station(db, station_id)
-
     async def report_vehicle_degraded(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle:
         """Marks a vehicle as degraded due to user report."""
         vehicle = await self.get_vehicle_by_id(db, vehicle_id)
@@ -32,10 +26,6 @@ class VehiclesService:
             raise Exception(f"Failed to report vehicle {vehicle_id} as degraded")
 
         return await self.get_vehicle_by_id(db, vehicle_id)
-
-    async def list_vehicles_eligible_for_treatment(self, db: aiosqlite.Connection) -> list[Vehicle]:
-        """List all vehicles that are eligible for treatment."""
-        return await self._repository.list_vehicles_eligible_for_treatment(db)
 
     async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> Vehicle:
         """Perform maintenance on a vehicle.

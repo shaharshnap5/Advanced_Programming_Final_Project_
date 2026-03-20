@@ -51,99 +51,30 @@ async def test_get_vehicle_not_found():
 
 
 @pytest.mark.asyncio
-async def test_list_vehicles():
-    with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
-        mock_db = AsyncMock()
-        mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.list_vehicles") as mock_list:
-            mock_list.return_value = [
-                {
-                    "vehicle_id": "V001",
-                    "station_id": 1,
-                    "vehicle_type": VehicleType.bike,
-                    "status": VehicleStatus.available,
-                    "rides_since_last_treated": 5,
-                    "last_treated_date": date(2025, 1, 1)
-                },
-                {
-                    "vehicle_id": "V002",
-                    "station_id": 1,
-                    "vehicle_type": VehicleType.scooter,
-                    "status": VehicleStatus.degraded,
-                    "rides_since_last_treated": 10,
-                    "last_treated_date": date(2025, 1, 2)
-                }
-            ]
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.get("/vehicles")
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert len(data) == 2
-            assert data[0]["vehicle_id"] == "V001"
+async def test_list_vehicles_endpoint_removed():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/vehicles")
+
+    assert response.status_code == 404
+    assert response.json()["error"] == "Not Found"
 
 
 @pytest.mark.asyncio
-async def test_list_vehicles_by_station():
-    with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
-        mock_db = AsyncMock()
-        mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.list_vehicles_by_station") as mock_list:
-            mock_list.return_value = [
-                {
-                    "vehicle_id": "V001",
-                    "station_id": 1,
-                    "vehicle_type": VehicleType.bike,
-                    "status": VehicleStatus.available,
-                    "rides_since_last_treated": 5,
-                    "last_treated_date": date(2025, 1, 1)
-                }
-            ]
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.get("/vehicles?station_id=1")
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert len(data) == 1
-            assert data[0]["station_id"] == 1
+async def test_list_vehicles_by_station_endpoint_removed():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/vehicles?station_id=1")
+
+    assert response.status_code == 404
+    assert response.json()["error"] == "Not Found"
+
 
 @pytest.mark.asyncio
-async def test_list_vehicles_eligible_for_treatment():
-    """Test listing vehicles eligible for treatment."""
-    with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
-        mock_db = AsyncMock()
-        mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.list_vehicles_eligible_for_treatment") as mock_list:
-            mock_list.return_value = [
-                {
-                    "vehicle_id": "V001",
-                    "station_id": 1,
-                    "vehicle_type": VehicleType.bike,
-                    "status": VehicleStatus.degraded,
-                    "rides_since_last_treated": 10,
-                    "last_treated_date": date(2025, 1, 1)
-                },
-                {
-                    "vehicle_id": "V002",
-                    "station_id": 1,
-                    "vehicle_type": VehicleType.scooter,
-                    "status": VehicleStatus.available,
-                    "rides_since_last_treated": 7,
-                    "last_treated_date": date(2025, 1, 2)
-                }
-            ]
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.get("/vehicles/treatment/eligible")
-            
-            assert response.status_code == 200
-            data = response.json()
-            assert len(data) == 2
+async def test_list_vehicles_eligible_for_treatment_endpoint_removed():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/vehicles/treatment/eligible")
+
+    assert response.status_code == 404
+    assert response.json()["error"] == "Not Found"
 
 
 @pytest.mark.asyncio

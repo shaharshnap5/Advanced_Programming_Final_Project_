@@ -31,61 +31,6 @@ async def test_get_by_id_not_found(test_db):
 
 
 @pytest.mark.asyncio
-async def test_list_all(test_db):
-    repo = VehiclesRepository()
-    
-    vehicles = await repo.list_all(test_db)
-    
-    assert len(vehicles) == 2
-    assert all(isinstance(v, Vehicle) for v in vehicles)
-    assert vehicles[0].vehicle_id == "V001"
-    assert vehicles[1].vehicle_id == "V002"
-
-
-@pytest.mark.asyncio
-async def test_list_by_station(test_db):
-    repo = VehiclesRepository()
-    
-    vehicles = await repo.list_by_station(test_db, 1)
-    
-    assert len(vehicles) == 2
-    for vehicle in vehicles:
-        assert isinstance(vehicle, Vehicle)
-        assert vehicle.station_id == 1
-
-
-@pytest.mark.asyncio
-async def test_list_by_station_empty(test_db):
-    repo = VehiclesRepository()
-    
-    vehicles = await repo.list_by_station(test_db, 999)
-    
-    assert len(vehicles) == 0
-
-@pytest.mark.asyncio
-async def test_list_vehicles_eligible_for_treatment(test_db):
-    """Test listing vehicles eligible for treatment (degraded OR rides >= 7)."""
-    repo = VehiclesRepository()
-    
-    # Set V002 to have 7 rides (meets treatment threshold)
-    await test_db.execute(
-        "UPDATE vehicles SET rides_since_last_treated = 7 WHERE vehicle_id = 'V002'"
-    )
-    await test_db.commit()
-    
-    eligible = await repo.list_vehicles_eligible_for_treatment(test_db)
-    
-    # Should include V002 (rides >= 7)
-    vehicle_ids = [v.vehicle_id for v in eligible]
-    assert "V002" in vehicle_ids
-    
-    # Verify rides count
-    for vehicle in eligible:
-        if vehicle.vehicle_id == "V002":
-            assert vehicle.rides_since_last_treated >= 7
-
-
-@pytest.mark.asyncio
 async def test_treat_vehicle_success(test_db):
     """Test successful treatment of a vehicle."""
     repo = VehiclesRepository()
