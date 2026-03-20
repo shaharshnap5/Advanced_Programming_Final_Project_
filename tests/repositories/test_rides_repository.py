@@ -184,9 +184,8 @@ async def test_get_active_user_ids_returns_only_incomplete_rides(test_db):
     assert active_users[0].user_id == "USER_ACTIVE"
     assert active_users[0].email == "active@example.com"
 
-    # Legacy method should still work and return IDs
-    active_user_ids = await repo.get_active_user_ids(test_db)
-    assert active_user_ids == ["USER_ACTIVE"]
+
+@pytest.mark.asyncio
 async def test_get_active_ride_by_user_returns_ride_object(test_db):
     """Test that get_active_ride_by_user returns a Ride object, not a database row."""
     repo = RidesRepository()
