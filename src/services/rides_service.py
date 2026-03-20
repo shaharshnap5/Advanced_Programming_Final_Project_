@@ -11,7 +11,7 @@ from src.repositories.rides_repository import RidesRepository
 from src.repositories.users_repository import UsersRepository
 from src.repositories.stations_repository import StationsRepository
 from src.utilis.distance import calculate_euclidean_distance
-from src.utilis.lock_manager import get_lock_manager
+from src.models.lock_manager import LockManager
 
 
 
@@ -23,7 +23,7 @@ class RideService:
         self.stations_service = StationsService()
         self.stations_repo = StationsRepository()
         self.users_repo = UsersRepository()
-        self.lock_manager = get_lock_manager()
+        self.lock_manager = LockManager()
 
 
     async def start_new_ride(

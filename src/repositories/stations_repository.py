@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import aiosqlite
 from src.models.station import Station, StationWithDistance
-from src.utilis.lock_manager import get_lock_manager
+from src.models.lock_manager import LockManager
 
 
 class StationsRepository:
@@ -84,7 +84,7 @@ class StationsRepository:
 
         Returns: True if capacity is available and reserved, False otherwise
         """
-        lock_manager = get_lock_manager()
+        lock_manager = LockManager()
 
         async with lock_manager.station_lock(station_id):
             # Get station info and current capacity

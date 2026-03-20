@@ -2,7 +2,7 @@ from __future__ import annotations
 from src.models.vehicle import Vehicle, VehicleStatus
 
 import aiosqlite
-from src.utilis.lock_manager import get_lock_manager
+from src.models.lock_manager import LockManager
 
 
 class VehiclesRepository:
@@ -133,7 +133,7 @@ class VehiclesRepository:
 
     async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str):
         """Updates the vehicle status to rented and removes it from the station."""
-        lock_manager = get_lock_manager()
+        lock_manager = LockManager()
 
         async with lock_manager.vehicle_lock(vehicle_id):
             # Use SELECT FOR UPDATE to lock the row at database level
@@ -184,7 +184,7 @@ class VehiclesRepository:
         Updates: station_id, rides_since_last_treated, status
         Vehicles become 'degraded' when rides_since_last_treated > 10
         """
-        lock_manager = get_lock_manager()
+        lock_manager = LockManager()
 
         async with lock_manager.vehicle_lock(vehicle_id):
             # Verify vehicle exists and is currently rented

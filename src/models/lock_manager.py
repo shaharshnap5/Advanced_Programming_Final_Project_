@@ -11,20 +11,26 @@ class LockManager:
     """
     Thread-safe lock manager for managing concurrent access to resources.
     Uses asyncio locks to ensure atomic operations on shared resources.
+    Implemented as a singleton to ensure consistent locking across the application.
     """
 
-    def __init__(self):
-        # Resource-specific locks
-        self._vehicle_locks: Dict[str, asyncio.Lock] = {}
-        self._user_locks: Dict[str, asyncio.Lock] = {}
-        self._station_locks: Dict[int, asyncio.Lock] = {}
-        self._ride_locks: Dict[str, asyncio.Lock] = {}
+    _instance = None
 
-        # Master locks to protect the lock dictionaries themselves
-        self._vehicle_master_lock = asyncio.Lock()
-        self._user_master_lock = asyncio.Lock()
-        self._station_master_lock = asyncio.Lock()
-        self._ride_master_lock = asyncio.Lock()
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            # Initialize only once
+            cls._instance._vehicle_locks: Dict[str, asyncio.Lock] = {}
+            cls._instance._user_locks: Dict[str, asyncio.Lock] = {}
+            cls._instance._station_locks: Dict[int, asyncio.Lock] = {}
+            cls._instance._ride_locks: Dict[str, asyncio.Lock] = {}
+
+            # Master locks to protect the lock dictionaries themselves
+            cls._instance._vehicle_master_lock = asyncio.Lock()
+            cls._instance._user_master_lock = asyncio.Lock()
+            cls._instance._station_master_lock = asyncio.Lock()
+            cls._instance._ride_master_lock = asyncio.Lock()
+        return cls._instance
 
     @asynccontextmanager
     async def vehicle_lock(self, vehicle_id: str):
@@ -144,13 +150,6 @@ class LockManager:
                 lock.release()
 
 
-# Global singleton instance
-_global_lock_manager: LockManager | None = None
-
-
 def get_lock_manager() -> LockManager:
     """Get the global lock manager instance."""
-    global _global_lock_manager
-    if _global_lock_manager is None:
-        _global_lock_manager = LockManager()
-    return _global_lock_manager
+    return LockManager()

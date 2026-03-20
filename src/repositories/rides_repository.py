@@ -1,7 +1,7 @@
 import aiosqlite
 from datetime import datetime
 from src.models.ride import Ride
-from src.utilis.lock_manager import get_lock_manager
+from src.models.lock_manager import LockManager
 
 class RidesRepository:
     async def get_by_id(self, db: aiosqlite.Connection, ride_id: str) -> Ride | None:
@@ -33,7 +33,7 @@ class RidesRepository:
         Fetches the active ride for a user as a Ride object, or None if no active ride exists.
         Uses locking to prevent race conditions when checking for active rides.
         """
-        lock_manager = get_lock_manager()
+        lock_manager = LockManager()
 
         async with lock_manager.user_lock(user_id):
             cursor = await db.execute(
@@ -71,7 +71,7 @@ class RidesRepository:
         Inserts a new active ride into the database.
         Uses locking to ensure the user doesn't create multiple simultaneous rides.
         """
-        lock_manager = get_lock_manager()
+        lock_manager = LockManager()
 
         async with lock_manager.user_lock(user_id):
             # Double-check no active ride exists
