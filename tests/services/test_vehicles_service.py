@@ -83,6 +83,42 @@ async def test_report_vehicle_degraded():
     assert result.status == VehicleStatus.degraded
     mock_repo.update_vehicle_status.assert_called_once_with(mock_db, "V005", VehicleStatus.degraded)
 
+
+@pytest.mark.asyncio
+async def test_report_vehicle_degraded_already_degraded():
+    """Service should raise ValueError when vehicle is already degraded."""
+    mock_repo = Mock(spec=VehiclesRepository)
+    mock_repo.get_by_id = AsyncMock(return_value=Vehicle(
+        vehicle_id="V006",
+        station_id=1,
+        vehicle_type=VehicleType.bike,
+        status=VehicleStatus.degraded,
+        rides_since_last_treated=2,
+        last_treated_date=date(2025, 1, 1)
+    ))
+
+    service = VehiclesService(repository=mock_repo)
+    mock_db = Mock()
+
+    with pytest.raises(ValueError, match="already marked as degraded"):
+        await service.report_vehicle_degraded(mock_db, "V006")
+
+    # Verify that update_vehicle_status was never called
+    mock_repo.update_vehicle_status.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_report_vehicle_degraded_not_found():
+    """Service should raise ValueError when vehicle doesn't exist."""
+    mock_repo = Mock(spec=VehiclesRepository)
+    mock_repo.get_by_id = AsyncMock(return_value=None)
+
+    service = VehiclesService(repository=mock_repo)
+    mock_db = Mock()
+
+    with pytest.raises(ValueError, match="not found"):
+        await service.report_vehicle_degraded(mock_db, "V999")
+
 @pytest.mark.asyncio
 async def test_treat_vehicle_rides_threshold():
     """Test treating a vehicle that reached rides threshold but not degraded."""
