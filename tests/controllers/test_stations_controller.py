@@ -78,3 +78,61 @@ async def test_get_nearest_station_missing_params():
         response = await client.get("/stations/nearest")
     
     assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_get_station_includes_vehicles_array():
+    """Test that GET /stations/{id} returns vehicles array populated from database."""
+    with patch("src.controllers.stations_controller.get_db") as mock_get_db:
+        mock_db = AsyncMock()
+        mock_get_db.return_value.__aenter__.return_value = mock_db
+
+        with patch("src.controllers.stations_controller.service.get_station_by_id") as mock_get:
+            mock_get.return_value = {
+                "station_id": 1,
+                "name": "Test Station",
+                "lat": 32.0,
+                "lon": 34.0,
+                "max_capacity": 10,
+                "vehicles": ["bike_001", "ebike_002", "scooter_003"]
+            }
+
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.get("/stations/1")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "vehicles" in data
+            assert isinstance(data["vehicles"], list)
+            assert len(data["vehicles"]) == 3
+            assert "bike_001" in data["vehicles"]
+
+
+@pytest.mark.asyncio
+async def test_get_nearest_station_includes_vehicles_array():
+    """Test that GET /stations/nearest returns vehicles array populated from database."""
+    with patch("src.controllers.stations_controller.get_db") as mock_get_db:
+        mock_db = AsyncMock()
+        mock_get_db.return_value.__aenter__.return_value = mock_db
+
+        with patch("src.controllers.stations_controller.service.get_nearest_station") as mock_get:
+            mock_get.return_value = {
+                "station_id": 1,
+                "name": "Nearest Station",
+                "lat": 32.0,
+                "lon": 34.0,
+                "max_capacity": 10,
+                "distance": 0.01,
+                "vehicles": ["ebike_001", "scooter_001"]
+            }
+
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.get("/stations/nearest?lon=34.0&lat=32.0")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "vehicles" in data
+            assert isinstance(data["vehicles"], list)
+            assert len(data["vehicles"]) == 2
+            assert "ebike_001" in data["vehicles"]
+            assert "distance" in data
