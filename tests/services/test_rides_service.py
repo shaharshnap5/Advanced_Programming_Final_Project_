@@ -43,7 +43,16 @@ async def test_start_new_ride_success():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V001",
+            vehicle_type=VehicleType.bike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -118,7 +127,16 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V002",
+            vehicle_type=VehicleType.scooter,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -155,7 +173,16 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V003",
+            vehicle_type=VehicleType.ebike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -192,7 +219,16 @@ async def test_start_new_ride_vehicle_id_sorting():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="SCOOTER001",
+            vehicle_type=VehicleType.scooter,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -226,7 +262,16 @@ async def test_start_new_ride_returns_correct_model():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V_TEST",
+            vehicle_type=VehicleType.bike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -271,7 +316,16 @@ async def test_start_new_ride_creates_database_entry():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V_NEW",
+            vehicle_type=VehicleType.bike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
