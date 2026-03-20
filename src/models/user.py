@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 
 class UserCreate(BaseModel):
-    user_id: str = Field(..., min_length=1, description="Unique identifier for the user")
     first_name: str = Field(..., min_length=1, description="User first name")
     last_name: str = Field(..., min_length=1, description="User last name")
     email: str = Field(..., min_length=3, description="User email address")

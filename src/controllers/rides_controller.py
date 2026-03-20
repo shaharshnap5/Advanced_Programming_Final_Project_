@@ -32,7 +32,7 @@ async def start_ride(
             db,
             user_id=request.user_id,
             lon=request.lon,
-            lat=request.lat
+            lat=request.lat,
         )
 
         if not ride:
