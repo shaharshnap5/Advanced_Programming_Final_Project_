@@ -53,11 +53,13 @@ class RideService:
         # 👇 FIX 1: Bracket notation inside the lambda function 👇
         sorted_vehicles = sorted(
             available_vehicles,
-            key=lambda v: (type_priority.get(v.vehicle_type, 4), v.vehicle_id)
+            key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id)
         )
 
-        # Pick the absolute best vehicle from the top of the sorted list
-        picked_vehicle = sorted_vehicles[0]
+        # Pick the best vehicle that can actually be rented under its subtype rules.
+        picked_vehicle = next((vehicle for vehicle in sorted_vehicles if vehicle.can_rent()), None)
+        if not picked_vehicle:
+            raise HTTPException(status_code=409, detail="No available vehicles have sufficient charge/eligibility.")
 
         # 4. Generate a unique ID for the new ride
         new_ride_id = str(uuid.uuid4())
@@ -136,6 +138,8 @@ class RideService:
         
         # Dock the vehicle at the station
         docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
+        if not docked_vehicle:
+            raise HTTPException(status_code=400, detail=f"Failed to dock vehicle {ride.vehicle_id}.")
         
         # Step 5: Calculate and process payment
         # For now, return a fixed 15 ILS
@@ -145,4 +149,5 @@ class RideService:
         return {
             "end_station_id": station_id,
             "payment_charged": payment_charged,
+            "vehicle": docked_vehicle.model_dump(mode="json"),
         }

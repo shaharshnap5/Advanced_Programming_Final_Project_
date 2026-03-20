@@ -28,6 +28,8 @@ async def init_db(reset_db: bool = False) -> None:
             await db.executescript(
                 """
                 DROP TABLE IF EXISTS rides;
+                DROP TABLE IF EXISTS ebikes;
+                DROP TABLE IF EXISTS scooters;
                 DROP TABLE IF EXISTS users;
                 DROP TABLE IF EXISTS vehicles;
                 DROP TABLE IF EXISTS stations;
@@ -48,6 +50,12 @@ async def init_db(reset_db: bool = False) -> None:
 
         print("Loading vehicles...")
         vehicles = pd.read_csv(VEHICLES_CSV)
+
+        if "battery" not in vehicles.columns:
+            vehicles["battery"] = vehicles["vehicle_type"].apply(
+                lambda vehicle_type: 100 if vehicle_type in {"electric_bicycle", "scooter"} else None
+            )
+
         await db.executemany(
             """INSERT OR IGNORE INTO vehicles(
                    vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date
@@ -60,6 +68,18 @@ async def init_db(reset_db: bool = False) -> None:
                 "rides_since_last_treated",
                 "last_treated_date",
             ]].itertuples(index=False, name=None),
+        )
+
+        ebikes = vehicles[vehicles["vehicle_type"] == "electric_bicycle"][['vehicle_id', 'battery']]
+        scooters = vehicles[vehicles["vehicle_type"] == "scooter"][['vehicle_id', 'battery']]
+
+        await db.executemany(
+            "INSERT OR IGNORE INTO ebikes(vehicle_id, battery) VALUES(?, ?)",
+            ebikes.itertuples(index=False, name=None),
+        )
+        await db.executemany(
+            "INSERT OR IGNORE INTO scooters(vehicle_id, battery) VALUES(?, ?)",
+            scooters.itertuples(index=False, name=None),
         )
         print("Loading users...")
         users = pd.read_csv(USERS_CSV)

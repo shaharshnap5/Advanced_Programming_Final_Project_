@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
+from src.models.vehicle import Vehicle
 
 
 
@@ -49,4 +50,5 @@ class Station(BaseModel):
 
 class StationWithDistance(Station):
     distance: float
+    nearest_available_vehicle: Vehicle | None = None
 

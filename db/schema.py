@@ -19,6 +19,18 @@ CREATE TABLE IF NOT EXISTS vehicles (
   FOREIGN KEY(station_id) REFERENCES stations(station_id)
 );
 
+CREATE TABLE IF NOT EXISTS ebikes (
+  vehicle_id TEXT PRIMARY KEY,
+  battery INTEGER NOT NULL DEFAULT 100,
+  FOREIGN KEY(vehicle_id) REFERENCES vehicles(vehicle_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS scooters (
+  vehicle_id TEXT PRIMARY KEY,
+  battery INTEGER NOT NULL DEFAULT 100,
+  FOREIGN KEY(vehicle_id) REFERENCES vehicles(vehicle_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS users (
   user_id TEXT PRIMARY KEY,
   first_name TEXT NOT NULL,

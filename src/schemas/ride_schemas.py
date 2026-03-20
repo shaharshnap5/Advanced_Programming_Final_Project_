@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from src.models.vehicle import Vehicle
 
 
 class RideStartRequest(BaseModel):
@@ -12,4 +13,10 @@ class EndRidePayload(BaseModel):
     ride_id: str
     lon: float
     lat: float
+
+
+class EndRideResponse(BaseModel):
+    end_station_id: int
+    payment_charged: int
+    vehicle: Vehicle
 

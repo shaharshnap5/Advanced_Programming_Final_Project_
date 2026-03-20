@@ -236,7 +236,7 @@ class TestCompleteFleetIntegration:
         ebike.station_id = 1
 
         # Scooter with low battery shouldn't rent
-        scooter.battery_level = 15  # Below 20% threshold
+        scooter.battery_level = 13  # Below 14% threshold
         with pytest.raises(Exception, match="Electric vehicle is not available for rent"):
             scooter.rent()
 
@@ -696,7 +696,7 @@ class TestCompleteFleetIntegration:
         ebike.station_id = 1
 
         # Scooter with low battery shouldn't rent
-        scooter.battery_level = 15  # Below 20% threshold
+        scooter.battery_level = 13  # Below 14% threshold
         with pytest.raises(Exception, match="Electric vehicle is not available for rent"):
             scooter.rent()
 

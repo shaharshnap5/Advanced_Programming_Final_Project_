@@ -38,6 +38,10 @@ async def test_db():
         "INSERT INTO vehicles (vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date) VALUES (?, ?, ?, ?, ?, ?)",
         ("V002", 1, "scooter", "degraded", 10, "2025-01-02")
     )
+    await db.execute(
+        "INSERT INTO scooters (vehicle_id, battery) VALUES (?, ?)",
+        ("V002", 100),
+    )
     await db.commit()
     
     yield db
