@@ -235,9 +235,12 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
     ))
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+    # Mock stations repo for capacity check
+    service.stations_repo = AsyncMock()
+    service.stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+
     mock_db = Mock()
-    
+
     # Execute
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.5, lat=32.5)
     
@@ -289,7 +292,10 @@ async def test_ride_end_selects_station_with_capacity(test_db):
     ))
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+    # Mock stations repo for capacity check
+    service.stations_repo = AsyncMock()
+    service.stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.4, lat=32.4)
     
@@ -344,10 +350,13 @@ async def test_vehicle_dock_state_transitions(test_db):
         start_time=datetime.now(),
     ))
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+    # Mock stations repo for capacity check
+    service.stations_repo = AsyncMock()
+    service.stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.5, lat=32.5)
-    
+
     # Verify result is correct
     assert result["end_station_id"] == 1
 
@@ -389,7 +398,10 @@ async def test_multiple_concurrent_rides_ending(test_db):
     
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 20, "current_capacity": 15}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+    # Mock stations repo for capacity check
+    service.stations_repo = AsyncMock()
+    service.stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_003", lon=34.5, lat=32.5)
     
@@ -435,7 +447,10 @@ async def test_payment_logic_normal_ride(test_db):
     
     mock_stations = [{"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+    # Mock stations repo for capacity check
+    service.stations_repo = AsyncMock()
+    service.stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_NORMAL", lon=34.5, lat=32.5)
     
@@ -490,10 +505,13 @@ async def test_nearest_station_calculation(test_db):
     ]
     
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+    # Mock stations repo for capacity check
+    service.stations_repo = AsyncMock()
+    service.stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE_001", lon=34.1, lat=32.1)
-    
+
     # S1 and S3 are equally close (first one should be selected)
     assert result["end_station_id"] in [1, 3]
 

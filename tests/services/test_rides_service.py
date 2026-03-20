@@ -347,7 +347,7 @@ async def test_end_ride_success():
     service.rides_repo = rides_repo
     service.vehicles_repo = vehicles_repo
     service.users_repo = users_repo
-    
+
     # Mock stations service
     service.stations_service = AsyncMock()
     mock_stations = [
@@ -369,9 +369,14 @@ async def test_end_ride_success():
         },
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+
+    # Mock stations repo for capacity check
+    stations_repo = AsyncMock()
+    stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+    service.stations_repo = stations_repo
+
     mock_db = Mock()
-    
+
     result = await service.end_ride(mock_db, "RIDE001", lon=34.5, lat=32.5)
     
     # Verify response structure (only required fields per specification)
@@ -542,15 +547,20 @@ async def test_end_ride_payment_fixed_15_ils():
     service.vehicles_repo = vehicles_repo
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
-    
+
     mock_stations = [
         {"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+
+    # Mock stations repo for capacity check
+    stations_repo = AsyncMock()
+    stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+    service.stations_repo = stations_repo
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
-    
+
     assert result["payment_charged"] == 15
 
 
@@ -589,7 +599,7 @@ async def test_end_ride_selects_nearest_station():
     service.vehicles_repo = vehicles_repo
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
-    
+
     # Three stations with different distances
     # User drop-off at (32.1, 34.1)
     # S1: (32.0, 34.0) - closest
@@ -601,6 +611,11 @@ async def test_end_ride_selects_nearest_station():
         {"station_id": 3, "name": "S3", "lat": 31.0, "lon": 33.0, "max_capacity": 10, "current_capacity": 5},
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+
+    # Mock stations repo for capacity check
+    stations_repo = AsyncMock()
+    stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+    service.stations_repo = stations_repo
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE001", lon=34.1, lat=32.1)
