@@ -27,7 +27,7 @@ class VehiclesService:
         if vehicle.status == VehicleStatus.degraded:
             return vehicle
 
-        success = await self._repository.update_vehicle_status(db, vehicle_id, VehicleStatus.degraded.value)
+        success = await self._repository.update_vehicle_status(db, vehicle_id, VehicleStatus.degraded)
         if not success:
             raise Exception(f"Failed to report vehicle {vehicle_id} as degraded")
 

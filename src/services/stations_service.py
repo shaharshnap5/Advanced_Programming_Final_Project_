@@ -3,20 +3,48 @@ from src.utilis.distance import calculate_euclidean_distance
 import aiosqlite
 
 from src.repositories.stations_repository import StationsRepository
+from src.repositories.vehicles_repository import VehiclesRepository
 from src.models.station import Station, StationWithDistance
+from src.models.vehicle import VehicleType
 
 
 
 
 class StationsService:
-    def __init__(self, repository: StationsRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: StationsRepository | None = None,
+        vehicles_repository: VehiclesRepository | None = None,
+    ) -> None:
         self._repository = repository or StationsRepository()
+        self._vehicles_repository = vehicles_repository or VehiclesRepository()
 
     async def get_station_by_id(self, db: aiosqlite.Connection, station_id: int) -> Station | None:
         return await self._repository.get_by_id(db, station_id)
 
     async def get_nearest_station(self, db: aiosqlite.Connection, lon: float, lat: float) -> StationWithDistance | None:
-        return await self._repository.get_nearest(db, lon=lon, lat=lat)
+        station = await self._repository.get_nearest(db, lon=lon, lat=lat)
+        if not station:
+            return None
+
+        if isinstance(station, dict):
+            station = StationWithDistance(**station)
+
+        available_vehicles = await self._vehicles_repository.get_available_vehicles_by_station(db, station.station_id)
+        type_priority = {
+            VehicleType.scooter: 1,
+            VehicleType.ebike: 2,
+            VehicleType.bike: 3,
+        }
+
+        if available_vehicles:
+            best_vehicle = sorted(
+                available_vehicles,
+                key=lambda v: (type_priority.get(v.vehicle_type, 4), v.vehicle_id),
+            )[0]
+            station.nearest_available_vehicle = best_vehicle
+
+        return station
 
 
     # Add this helper function if you don't have it already
