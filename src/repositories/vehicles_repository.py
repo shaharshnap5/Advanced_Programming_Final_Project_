@@ -1,102 +1,122 @@
 from __future__ import annotations
-from src.models.vehicle import Vehicle, VehicleStatus
+from src.models.vehicle import Vehicle, VehicleStatus, VehicleFactory
 
 import aiosqlite
 from src.models.lock_manager import LockManager
 
 
 class VehiclesRepository:
+    BASE_SELECT = """
+        SELECT
+            v.vehicle_id,
+            v.station_id,
+            v.vehicle_type,
+            v.status,
+            v.rides_since_last_treated,
+            v.last_treated_date,
+            CASE
+                WHEN v.vehicle_type = 'electric_bicycle' THEN e.battery
+                WHEN v.vehicle_type = 'scooter' THEN s.battery
+                ELSE NULL
+            END AS battery
+        FROM vehicles v
+        LEFT JOIN ebikes e ON v.vehicle_id = e.vehicle_id
+        LEFT JOIN scooters s ON v.vehicle_id = s.vehicle_id
+    """
+
+    @staticmethod
+    def _to_vehicle(row: aiosqlite.Row) -> Vehicle:
+        return VehicleFactory.from_row(dict(row))
+
+    async def _update_electric_battery(self, db: aiosqlite.Connection, vehicle: Vehicle) -> None:
+        if vehicle.vehicle_type.value == "electric_bicycle":
+            await db.execute(
+                "UPDATE ebikes SET battery = ? WHERE vehicle_id = ?",
+                (vehicle.battery, vehicle.vehicle_id),
+            )
+        elif vehicle.vehicle_type.value == "scooter":
+            await db.execute(
+                "UPDATE scooters SET battery = ? WHERE vehicle_id = ?",
+                (vehicle.battery, vehicle.vehicle_id),
+            )
+
     async def get_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
         cursor = await db.execute(
-            """
-            SELECT
-                vehicle_id,
-                station_id,
-                vehicle_type,
-                status,
-                rides_since_last_treated,
-                last_treated_date
-            FROM vehicles
-            WHERE vehicle_id = ?
+            f"""
+            {self.BASE_SELECT}
+            WHERE v.vehicle_id = ?
             """,
             (vehicle_id,),
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return Vehicle(**dict(row)) if row else None
+        return self._to_vehicle(row) if row else None
 
     async def list_all(self, db: aiosqlite.Connection) -> list[Vehicle]:
         cursor = await db.execute(
-            """
-            SELECT
-                vehicle_id,
-                station_id,
-                vehicle_type,
-                status,
-                rides_since_last_treated,
-                last_treated_date
-            FROM vehicles
-            """
+            self.BASE_SELECT
         )
         rows = await cursor.fetchall()
         await cursor.close()
-        return [Vehicle(**dict(row)) for row in rows]
+        return [self._to_vehicle(row) for row in rows]
 
     async def list_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
         cursor = await db.execute(
-            """
-            SELECT
-                vehicle_id,
-                station_id,
-                vehicle_type,
-                status,
-                rides_since_last_treated,
-                last_treated_date
-            FROM vehicles
-            WHERE station_id = ?
+            f"""
+            {self.BASE_SELECT}
+            WHERE v.station_id = ?
             """,
             (station_id,),
         )
         rows = await cursor.fetchall()
         await cursor.close()
-        return [Vehicle(**dict(row)) for row in rows]
+        return [self._to_vehicle(row) for row in rows]
 
     async def list_vehicles_eligible_for_treatment(self, db: aiosqlite.Connection) -> list[Vehicle]:
         """List vehicles eligible for treatment: degraded OR rides >= 7."""
         cursor = await db.execute(
-            """
-            SELECT
-                vehicle_id,
-                station_id,
-                vehicle_type,
-                status,
-                rides_since_last_treated,
-                last_treated_date
-            FROM vehicles
-            WHERE status = 'degraded' OR rides_since_last_treated >= 7
+            f"""
+            {self.BASE_SELECT}
+            WHERE v.status = 'degraded' OR v.rides_since_last_treated >= 7
             """
         )
         rows = await cursor.fetchall()
         await cursor.close()
-        return [Vehicle(**dict(row)) for row in rows]
+        return [self._to_vehicle(row) for row in rows]
 
     async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> bool:
         """Perform maintenance on a vehicle.
         Sets: status='available', rides_since_last_treated=0, last_treated_date=today.
-        For previously degraded vehicles, assigns a station.
+        Updates station_id if provided by service layer.
         """
-        import datetime
+        vehicle = await self.get_by_id(db, vehicle_id)
+        if not vehicle:
+            return False
+
+        # Service layer determines whether to update station_id
+        if station_id is not None:
+            vehicle.station_id = station_id
+
+        vehicle.treat()
+
         cursor = await db.execute(
             """
             UPDATE vehicles
-            SET status = 'available',
-                rides_since_last_treated = 0,
+            SET status = ?,
+                rides_since_last_treated = ?,
                 last_treated_date = ?,
-                station_id = CASE WHEN station_id IS NULL AND ? IS NOT NULL THEN ? ELSE station_id END
+                station_id = ?
             WHERE vehicle_id = ?
             """,
-            (datetime.date.today().isoformat(), station_id, station_id, vehicle_id),
+            (
+                vehicle.status.value,
+                vehicle.rides_since_last_treated,
+                vehicle.last_treated_date.isoformat() if vehicle.last_treated_date else None,
+                vehicle.station_id,
+                vehicle_id,
+            ),
         )
+        await self._update_electric_battery(db, vehicle)
         await db.commit()
         affected = cursor.rowcount
         await cursor.close()
@@ -120,100 +140,86 @@ class VehiclesRepository:
     async def get_available_vehicle(self, db: aiosqlite.Connection, station_id: int) -> Vehicle | None:
         """Finds one available vehicle at the given station."""
         cursor = await db.execute(
-            """
-            SELECT vehicle_id, vehicle_type 
-            FROM vehicles 
-            WHERE station_id = ? AND status = 'available' 
+            f"""
+            {self.BASE_SELECT}
+            WHERE v.station_id = ? AND v.status = 'available' 
             LIMIT 1
             """,
             (station_id,)
         )
         row = await cursor.fetchone()
-        return Vehicle(**dict(row)) if row else None
+        await cursor.close()
+        return self._to_vehicle(row) if row else None
 
-    async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str):
-        """Updates the vehicle status to rented and removes it from the station."""
+    async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
+        """Rents a vehicle through its domain model and persists the state with locking."""
         lock_manager = LockManager()
 
         async with lock_manager.vehicle_lock(vehicle_id):
-            # Use SELECT FOR UPDATE to lock the row at database level
-            cursor = await db.execute(
-                """
-                SELECT status FROM vehicles
-                WHERE vehicle_id = ? AND status = 'available'
-                """,
-                (vehicle_id,)
-            )
-            row = await cursor.fetchone()
-            await cursor.close()
+            vehicle = await self.get_by_id(db, vehicle_id)
+            if not vehicle:
+                return None
 
-            if not row:
+            # Check if vehicle is available before renting
+            if vehicle.status != VehicleStatus.available:
                 raise ValueError(f"Vehicle {vehicle_id} is not available for rental")
+
+            vehicle.rent()
 
             await db.execute(
                 """
                 UPDATE vehicles
-                SET status = 'rented', station_id = NULL
+                SET status = ?, station_id = ?
                 WHERE vehicle_id = ?
                 """,
-                (vehicle_id,)
+                (vehicle.status.value, vehicle.station_id, vehicle_id),
             )
-            # We commit right away to ensure state is safely persisted to the disk!
             await db.commit()
+            return vehicle
 
     async def get_available_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
-        query = """
-            SELECT * FROM vehicles 
-            WHERE station_id = ? AND status = 'available'
+        query = f"""
+            {self.BASE_SELECT}
+            WHERE v.station_id = ? AND v.status = 'available'
         """
         db.row_factory = aiosqlite.Row
         async with db.execute(query, (station_id,)) as cursor:
             rows = await cursor.fetchall()
-            return [Vehicle(**dict(row)) for row in rows]
+            return [self._to_vehicle(row) for row in rows]
 
-    async def dock_vehicle(
-        self,
-        db: aiosqlite.Connection,
-        vehicle_id: str,
-        station_id: int,
-        rides_count: int,
-        status: VehicleStatus = VehicleStatus.available
-    ) -> Vehicle | None:
+    async def dock_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int) -> Vehicle | None:
         """
-        Dock a vehicle at a station after a ride ends.
-        Updates: station_id, rides_since_last_treated, status
-        Vehicles become 'degraded' when rides_since_last_treated > 10
+        Docks a vehicle at a station after ride completion with locking.
+        The domain model determines ride counters, battery drain, and final status.
         """
         lock_manager = LockManager()
 
         async with lock_manager.vehicle_lock(vehicle_id):
-            # Verify vehicle exists and is currently rented
-            cursor = await db.execute(
-                """
-                SELECT status FROM vehicles
-                WHERE vehicle_id = ?
-                """,
-                (vehicle_id,)
-            )
-            row = await cursor.fetchone()
-            await cursor.close()
-
-            if not row:
+            vehicle = await self.get_by_id(db, vehicle_id)
+            if not vehicle:
                 raise ValueError(f"Vehicle {vehicle_id} not found")
 
-            if row["status"] not in ["rented", "available"]:
-                raise ValueError(f"Vehicle {vehicle_id} cannot be docked in status {row['status']}")
+            if vehicle.status not in [VehicleStatus.rented, VehicleStatus.available]:
+                raise ValueError(f"Vehicle {vehicle_id} cannot be docked in status {vehicle.status}")
 
-            final_status = VehicleStatus.degraded if rides_count > 10 else status
+            vehicle.return_vehicle(station_id)
 
             cursor = await db.execute(
                 """
                 UPDATE vehicles
-                SET station_id = ?, rides_since_last_treated = ?, status = ?
+                SET station_id = ?,
+                    rides_since_last_treated = ?,
+                    status = ?
                 WHERE vehicle_id = ?
                 """,
-                (station_id, rides_count, final_status, vehicle_id),
+                (
+                    vehicle.station_id,
+                    vehicle.rides_since_last_treated,
+                    vehicle.status.value,
+                    vehicle_id,
+                ),
             )
+            await self._update_electric_battery(db, vehicle)
             await db.commit()
             affected = cursor.rowcount
             await cursor.close()

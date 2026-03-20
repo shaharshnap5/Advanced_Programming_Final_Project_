@@ -63,23 +63,28 @@ class RideService:
 
         sorted_vehicles = sorted(
             available_vehicles,
-            key=lambda v: (type_priority.get(v.vehicle_type, 4), v.vehicle_id)
+            key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id)
         )
 
-        # Try to rent the best available vehicle
+        # Try to rent the best available vehicle that passes domain rules
         picked_vehicle = None
         for vehicle in sorted_vehicles:
+            # First check domain rules (battery, eligibility)
+            if not vehicle.can_rent():
+                continue
+
             try:
                 # This will acquire the vehicle lock and verify availability
-                await self.vehicles_repo.mark_vehicle_as_rented(db, vehicle.vehicle_id)
-                picked_vehicle = vehicle
-                break
+                rented_vehicle = await self.vehicles_repo.mark_vehicle_as_rented(db, vehicle.vehicle_id)
+                if rented_vehicle:
+                    picked_vehicle = rented_vehicle
+                    break
             except ValueError:
                 # Vehicle was taken by another request, try next one
                 continue
 
         if not picked_vehicle:
-            raise HTTPException(status_code=409, detail="All vehicles were taken by other users. Please try again.")
+            raise HTTPException(status_code=409, detail="No available vehicles have sufficient charge/eligibility or all were taken by other users.")
 
         # 4. Generate a unique ID for the new ride
         new_ride_id = str(uuid.uuid4())
@@ -159,6 +164,7 @@ class RideService:
             raise HTTPException(status_code=400, detail=f"Vehicle {ride.vehicle_id} not found.")
 
         docked_station_id = None
+        docked_vehicle = None
         for station in sorted_stations:
             station_id = station["station_id"]
 
@@ -168,21 +174,21 @@ class RideService:
             if has_capacity:
                 try:
                     # Dock the vehicle at the station (with vehicle lock)
-                    new_rides_count = vehicle.rides_since_last_treated + 1
                     docked_vehicle = await self.vehicles_repo.dock_vehicle(
                         db,
                         ride.vehicle_id,
-                        station_id,
-                        new_rides_count
+                        station_id
                     )
-                    docked_station_id = station_id
-                    break
+                    if docked_vehicle:
+                        docked_station_id = station_id
+                        break
                 except ValueError:
                     # If docking fails, try next station
                     continue
 
-        if not docked_station_id:
+        if not docked_station_id or not docked_vehicle:
             raise HTTPException(status_code=400, detail="Unable to dock vehicle - all stations reached capacity.")
+
 
         # Step 5: Calculate and process payment
         # For now, return a fixed 15 ILS
@@ -192,4 +198,5 @@ class RideService:
         return {
             "end_station_id": docked_station_id,
             "payment_charged": payment_charged,
+            "vehicle": docked_vehicle.model_dump(mode="json"),
         }

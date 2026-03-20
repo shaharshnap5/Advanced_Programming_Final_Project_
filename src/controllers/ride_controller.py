@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 import aiosqlite
 
-from src.schemas.ride_schemas import RideStartRequest, EndRidePayload
+from src.schemas.ride_schemas import RideStartRequest, EndRidePayload, EndRideResponse
 from src.models.ride import Ride
 from src.services.rides_service import RideService
 
@@ -43,7 +43,7 @@ async def start_ride(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/end")
+@router.post("/end", response_model=EndRideResponse)
 async def end_ride(
     payload: EndRidePayload,
     db: aiosqlite.Connection = Depends(get_db)

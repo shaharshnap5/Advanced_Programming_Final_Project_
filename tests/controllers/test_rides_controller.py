@@ -178,7 +178,15 @@ async def test_end_ride_endpoint_valid_payload():
         mock_end_ride.return_value = {
             "end_station_id": 5,
             "payment_charged": 15,
-            "active_users": ["USER_A", "USER_B"],
+            "vehicle": {
+                "vehicle_id": "V001",
+                "station_id": 5,
+                "vehicle_type": "electric_bicycle",
+                "status": "available",
+                "rides_since_last_treated": 4,
+                "last_treated_date": None,
+                "battery": 86,
+            },
         }
         
         response = client.post("/ride/end", json=payload)
@@ -187,7 +195,7 @@ async def test_end_ride_endpoint_valid_payload():
         data = response.json()
         assert data["end_station_id"] == 5
         assert data["payment_charged"] == 15
-        assert data["active_users"] == ["USER_A", "USER_B"]
+        assert data["vehicle"]["battery"] == 86
         mock_end_ride.assert_called_once()
 
 
@@ -316,7 +324,15 @@ async def test_end_ride_endpoint_response_structure():
         mock_end_ride.return_value = {
             "end_station_id": 1,
             "payment_charged": 15,
-            "active_users": [],
+            "vehicle": {
+                "vehicle_id": "V002",
+                "station_id": 1,
+                "vehicle_type": "bicycle",
+                "status": "available",
+                "rides_since_last_treated": 6,
+                "last_treated_date": None,
+                "battery": None,
+            },
         }
         
         response = client.post("/ride/end", json=payload)
@@ -327,11 +343,11 @@ async def test_end_ride_endpoint_response_structure():
         # Verify all required fields exist
         assert "end_station_id" in data
         assert "payment_charged" in data
-        assert "active_users" in data
+        assert "vehicle" in data
         
         # Verify types
         assert isinstance(data["end_station_id"], int)
         assert isinstance(data["payment_charged"], int)
-        assert isinstance(data["active_users"], list)
+        assert isinstance(data["vehicle"], dict)
 
 
