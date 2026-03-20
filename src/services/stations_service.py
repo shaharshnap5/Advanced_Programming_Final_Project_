@@ -5,6 +5,7 @@ import aiosqlite
 from src.repositories.stations_repository import StationsRepository
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.models.station import Station, StationWithDistance
+from src.models.vehicle import VehicleType
 
 
 
@@ -31,15 +32,15 @@ class StationsService:
 
         available_vehicles = await self._vehicles_repository.get_available_vehicles_by_station(db, station.station_id)
         type_priority = {
-            "scooter": 1,
-            "electric_bicycle": 2,
-            "bicycle": 3,
+            VehicleType.scooter: 1,
+            VehicleType.ebike: 2,
+            VehicleType.bike: 3,
         }
 
         if available_vehicles:
             best_vehicle = sorted(
                 available_vehicles,
-                key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id),
+                key=lambda v: (type_priority.get(v.vehicle_type, 4), v.vehicle_id),
             )[0]
             station.nearest_available_vehicle = best_vehicle
 

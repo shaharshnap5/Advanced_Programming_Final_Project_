@@ -14,6 +14,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 #from src.db import get_db
 from db.schema import CREATE_SQL
+from src.models.vehicle import VehicleType
 STATIONS_CSV = PROJECT_ROOT / "data" / "stations.csv"
 VEHICLES_CSV = PROJECT_ROOT / "data" / "vehicles.csv"
 USERS_CSV = PROJECT_ROOT / "data" / "users.csv"
@@ -53,7 +54,7 @@ async def init_db(reset_db: bool = False) -> None:
 
         if "battery" not in vehicles.columns:
             vehicles["battery"] = vehicles["vehicle_type"].apply(
-                lambda vehicle_type: 100 if vehicle_type in {"electric_bicycle", "scooter"} else None
+                lambda vehicle_type: 100 if vehicle_type in {VehicleType.ebike.value, VehicleType.scooter.value} else None
             )
 
         await db.executemany(
@@ -70,8 +71,8 @@ async def init_db(reset_db: bool = False) -> None:
             ]].itertuples(index=False, name=None),
         )
 
-        ebikes = vehicles[vehicles["vehicle_type"] == "electric_bicycle"][['vehicle_id', 'battery']]
-        scooters = vehicles[vehicles["vehicle_type"] == "scooter"][['vehicle_id', 'battery']]
+        ebikes = vehicles[vehicles["vehicle_type"] == VehicleType.ebike.value][['vehicle_id', 'battery']]
+        scooters = vehicles[vehicles["vehicle_type"] == VehicleType.scooter.value][['vehicle_id', 'battery']]
 
         await db.executemany(
             "INSERT OR IGNORE INTO ebikes(vehicle_id, battery) VALUES(?, ?)",

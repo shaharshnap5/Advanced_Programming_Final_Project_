@@ -10,6 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from db.schema import CREATE_SQL
+from src.models.vehicle import VehicleType
 
 
 @pytest_asyncio.fixture
@@ -32,11 +33,11 @@ async def test_db():
     )
     await db.execute(
         "INSERT INTO vehicles (vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date) VALUES (?, ?, ?, ?, ?, ?)",
-        ("V001", 1, "bicycle", "available", 5, "2025-01-01")
+        ("V001", 1, VehicleType.bike.value, "available", 5, "2025-01-01")
     )
     await db.execute(
         "INSERT INTO vehicles (vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date) VALUES (?, ?, ?, ?, ?, ?)",
-        ("V002", 1, "scooter", "degraded", 10, "2025-01-02")
+        ("V002", 1, VehicleType.scooter.value, "degraded", 10, "2025-01-02")
     )
     await db.execute(
         "INSERT INTO scooters (vehicle_id, battery) VALUES (?, ?)",
