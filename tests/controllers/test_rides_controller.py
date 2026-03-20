@@ -162,8 +162,8 @@ async def test_start_ride_none_return():
 
 
 @pytest.mark.asyncio
-async def test_start_ride_with_vehicle_id_payload():
-    """/rides/start should support explicit vehicle_id payload."""
+async def test_start_ride_with_coordinates_payload():
+    """/rides/start should support location payload."""
     from fastapi.testclient import TestClient
 
     client = TestClient(app)
@@ -181,13 +181,11 @@ async def test_start_ride_with_vehicle_id_payload():
     with patch("src.controllers.rides_controller.service.start_new_ride", new_callable=AsyncMock) as mock_start:
         mock_start.return_value = Ride(**expected_ride)
 
-        response = client.post("/rides/start", json={"user_id": "USER001", "vehicle_id": "V001"})
+        response = client.post("/rides/start", json={"user_id": "USER001", "lon": 34.0, "lat": 32.0})
 
         assert response.status_code == 200
         assert response.json()["ride_id"] == "RIDE_001"
         mock_start.assert_called_once()
-        _, kwargs = mock_start.call_args
-        assert kwargs["vehicle_id"] == "V001"
 
 
 @pytest.mark.asyncio

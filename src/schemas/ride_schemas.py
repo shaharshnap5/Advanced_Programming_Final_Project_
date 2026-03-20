@@ -6,7 +6,6 @@ class RideStartRequest(BaseModel):
     user_id: str
     lon: float | None = None
     lat: float | None = None
-    vehicle_id: str | None = None
 
 
 class ActiveUsersResponse(BaseModel):

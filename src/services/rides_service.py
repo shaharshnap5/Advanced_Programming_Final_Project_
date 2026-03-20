@@ -6,6 +6,7 @@ from datetime import datetime
 
 from src.models.ride import Ride
 from src.models.user import User
+from src.models.vehicle import VehicleStatus, VehicleType
 from src.services.stations_service import StationsService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
@@ -26,29 +27,13 @@ class RideService:
         if not condition:
             raise HTTPException(status_code=status_code, detail=detail)
 
-    async def _pick_vehicle_by_id(
-        self,
-        db: aiosqlite.Connection,
-        vehicle_id: str,
-    ) -> tuple:
-        picked_vehicle = await self.vehicles_repo.get_by_id(db, vehicle_id)
-        self._ensure(picked_vehicle is not None, 404, f"Vehicle {vehicle_id} not found.")
-        self._ensure(picked_vehicle.status.value == "available", 409, f"Vehicle {vehicle_id} is not available.")
-        self._ensure(picked_vehicle.station_id is not None, 409, f"Vehicle {vehicle_id} is not docked at any station.")
-        self._ensure(
-            picked_vehicle.can_rent(),
-            409,
-            "Vehicle is not eligible for rent (battery/maintenance restrictions).",
-        )
-        return picked_vehicle, picked_vehicle.station_id
-
     async def _pick_vehicle_by_location(
         self,
         db: aiosqlite.Connection,
         lon: float | None,
         lat: float | None,
     ) -> tuple:
-        self._ensure(lon is not None and lat is not None, 400, "Either vehicle_id or both lon and lat are required.")
+        self._ensure(lon is not None and lat is not None, 400, "Both lon and lat are required.")
 
         nearest_station = await self.stations_service.get_nearest_station_with_vehicles(db, lon=lon, lat=lat)
         self._ensure(nearest_station is not None, 404, "No available vehicles found in the entire system.")
@@ -57,18 +42,19 @@ class RideService:
         available_vehicles = await self.vehicles_repo.get_available_vehicles_by_station(db, station_id)
 
         type_priority = {
-            "scooter": 1,
-            "electric_bicycle": 2,
-            "bicycle": 3,
+            VehicleType.scooter: 1,
+            VehicleType.ebike: 2,
+            VehicleType.bike: 3,
         }
 
         sorted_vehicles = sorted(
             available_vehicles,
-            key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id),
+            key=lambda v: (type_priority.get(v.vehicle_type, 4), v.vehicle_id),
         )
 
         picked_vehicle = next((vehicle for vehicle in sorted_vehicles if vehicle.can_rent()), None)
         self._ensure(picked_vehicle is not None, 409, "No available vehicles have sufficient charge/eligibility.")
+        self._ensure(picked_vehicle.status == VehicleStatus.available, 409, "Vehicle is not available.")
 
         return picked_vehicle, station_id
 
@@ -82,7 +68,6 @@ class RideService:
             user_id: str,
             lon: float | None = None,
             lat: float | None = None,
-            vehicle_id: str | None = None,
     ) -> Ride:
         try:
             user = await self.users_repo.get_by_id(db, user_id)
@@ -91,10 +76,7 @@ class RideService:
             active_ride = await self.rides_repo.get_active_ride_by_user(db, user_id)
             self._ensure(active_ride is None, 409, "User already has an active ride.")
 
-            if vehicle_id:
-                picked_vehicle, station_id = await self._pick_vehicle_by_id(db, vehicle_id)
-            else:
-                picked_vehicle, station_id = await self._pick_vehicle_by_location(db, lon, lat)
+            picked_vehicle, station_id = await self._pick_vehicle_by_location(db, lon, lat)
 
             new_ride_id = str(uuid.uuid4())
             start_time = datetime.now()
