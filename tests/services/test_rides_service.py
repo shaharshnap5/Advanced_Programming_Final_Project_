@@ -43,7 +43,16 @@ async def test_start_new_ride_success():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V001",
+            vehicle_type=VehicleType.bike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -122,7 +131,16 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V002",
+            vehicle_type=VehicleType.scooter,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -161,7 +179,16 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V003",
+            vehicle_type=VehicleType.ebike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -200,7 +227,16 @@ async def test_start_new_ride_vehicle_id_sorting():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="SCOOTER001",
+            vehicle_type=VehicleType.scooter,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -236,7 +272,16 @@ async def test_start_new_ride_returns_correct_model():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V_TEST",
+            vehicle_type=VehicleType.bike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -296,7 +341,16 @@ async def test_start_new_ride_creates_database_entry():
         ]
     )
 
-    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock()
+    mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
+        return_value=Vehicle(
+            vehicle_id="V_NEW",
+            vehicle_type=VehicleType.bike,
+            station_id=None,
+            status=VehicleStatus.rented,
+            rides_since_last_treated=0,
+            last_treated_date=date.today()
+        )
+    )
     mock_rides_repo.create_active_ride = AsyncMock()
     mock_rides_repo.get_active_ride_by_user = AsyncMock(return_value=None)
 
@@ -374,7 +428,7 @@ async def test_end_ride_success():
     service.rides_repo = rides_repo
     service.vehicles_repo = vehicles_repo
     service.users_repo = users_repo
-    
+
     # Mock stations service
     service.stations_service = AsyncMock()
     mock_stations = [
@@ -396,9 +450,14 @@ async def test_end_ride_success():
         },
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+
+    # Mock stations repo for capacity check
+    stations_repo = AsyncMock()
+    stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+    service.stations_repo = stations_repo
+
     mock_db = Mock()
-    
+
     result = await service.end_ride(mock_db, "RIDE001", lon=34.5, lat=32.5)
     
     # Verify response structure (only required fields per specification)
@@ -571,15 +630,20 @@ async def test_end_ride_payment_fixed_15_ils():
     service.vehicles_repo = vehicles_repo
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
-    
+
     mock_stations = [
         {"station_id": 1, "name": "S1", "lat": 32.5, "lon": 34.5, "max_capacity": 10, "current_capacity": 5}
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
-    
+
+    # Mock stations repo for capacity check
+    stations_repo = AsyncMock()
+    stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+    service.stations_repo = stations_repo
+
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE001", 34.5, 32.5)
-    
+
     assert result["payment_charged"] == 15
 
 
@@ -618,7 +682,7 @@ async def test_end_ride_selects_nearest_station():
     service.vehicles_repo = vehicles_repo
     service.stations_service = AsyncMock()
     service.users_repo = AsyncMock(spec=UsersRepository)
-    
+
     # Three stations with different distances
     # User drop-off at (32.1, 34.1)
     # S1: (32.0, 34.0) - closest
@@ -630,6 +694,11 @@ async def test_end_ride_selects_nearest_station():
         {"station_id": 3, "name": "S3", "lat": 31.0, "lon": 33.0, "max_capacity": 10, "current_capacity": 5},
     ]
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
+
+    # Mock stations repo for capacity check
+    stations_repo = AsyncMock()
+    stations_repo.check_and_reserve_capacity = AsyncMock(return_value=True)
+    service.stations_repo = stations_repo
     
     mock_db = Mock()
     result = await service.end_ride(mock_db, "RIDE001", lon=34.1, lat=32.1)

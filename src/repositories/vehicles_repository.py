@@ -2,6 +2,7 @@ from __future__ import annotations
 from src.models.vehicle import Vehicle, VehicleStatus, VehicleFactory
 
 import aiosqlite
+from src.models.lock_manager import LockManager
 
 
 class VehiclesRepository:
@@ -119,23 +120,30 @@ class VehiclesRepository:
         return self._to_vehicle(row) if row else None
 
     async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
-        """Rents a vehicle through its domain model and persists the state."""
-        vehicle = await self.get_by_id(db, vehicle_id)
-        if not vehicle:
-            return None
+        """Rents a vehicle through its domain model and persists the state with locking."""
+        lock_manager = LockManager()
 
-        vehicle.rent()
+        async with lock_manager.vehicle_lock(vehicle_id):
+            vehicle = await self.get_by_id(db, vehicle_id)
+            if not vehicle:
+                return None
 
-        await db.execute(
-            """
-            UPDATE vehicles 
-            SET status = ?, station_id = ? 
-            WHERE vehicle_id = ?
-            """,
-            (vehicle.status.value, vehicle.station_id, vehicle_id),
-        )
-        await db.commit()
-        return vehicle
+            # Check if vehicle is available before renting
+            if vehicle.status != VehicleStatus.available:
+                raise ValueError(f"Vehicle {vehicle_id} is not available for rental")
+
+            vehicle.rent()
+
+            await db.execute(
+                """
+                UPDATE vehicles
+                SET status = ?, station_id = ?
+                WHERE vehicle_id = ?
+                """,
+                (vehicle.status.value, vehicle.station_id, vehicle_id),
+            )
+            await db.commit()
+            return vehicle
 
     async def get_available_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
         query = f"""
@@ -149,35 +157,41 @@ class VehiclesRepository:
 
     async def dock_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int) -> Vehicle | None:
         """
-        Docks a vehicle at a station after ride completion.
+        Docks a vehicle at a station after ride completion with locking.
         The domain model determines ride counters, battery drain, and final status.
         """
-        vehicle = await self.get_by_id(db, vehicle_id)
-        if not vehicle:
+        lock_manager = LockManager()
+
+        async with lock_manager.vehicle_lock(vehicle_id):
+            vehicle = await self.get_by_id(db, vehicle_id)
+            if not vehicle:
+                raise ValueError(f"Vehicle {vehicle_id} not found")
+
+            if vehicle.status not in [VehicleStatus.rented, VehicleStatus.available]:
+                raise ValueError(f"Vehicle {vehicle_id} cannot be docked in status {vehicle.status}")
+
+            vehicle.return_vehicle(station_id)
+
+            cursor = await db.execute(
+                """
+                UPDATE vehicles
+                SET station_id = ?,
+                    rides_since_last_treated = ?,
+                    status = ?
+                WHERE vehicle_id = ?
+                """,
+                (
+                    vehicle.station_id,
+                    vehicle.rides_since_last_treated,
+                    vehicle.status.value,
+                    vehicle_id,
+                ),
+            )
+            await self._update_electric_battery(db, vehicle)
+            await db.commit()
+            affected = cursor.rowcount
+            await cursor.close()
+
+            if affected > 0:
+                return await self.get_by_id(db, vehicle_id)
             return None
-
-        vehicle.return_vehicle(station_id)
-
-        cursor = await db.execute(
-            """
-            UPDATE vehicles
-            SET station_id = ?,
-                rides_since_last_treated = ?,
-                status = ?
-            WHERE vehicle_id = ?
-            """,
-            (
-                vehicle.station_id,
-                vehicle.rides_since_last_treated,
-                vehicle.status.value,
-                vehicle_id,
-            ),
-        )
-        await self._update_electric_battery(db, vehicle)
-        await db.commit()
-        affected = cursor.rowcount
-        await cursor.close()
-
-        if affected > 0:
-            return await self.get_by_id(db, vehicle_id)
-        return None

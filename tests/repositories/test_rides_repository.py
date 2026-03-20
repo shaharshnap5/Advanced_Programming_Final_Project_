@@ -271,19 +271,20 @@ async def test_get_active_ride_by_user_only_returns_first_active_ride(test_db):
         start_time=start_time_1
     )
 
-    # Create second active ride (shouldn't happen in real scenario, but testing the query)
-    await repo.create_active_ride(
-        test_db,
-        ride_id="RIDE_MULTI_ACTIVE_002",
-        user_id="USER_MULTI_RIDES",
-        vehicle_id="V002",
-        start_station_id=2,
-        start_time=start_time_2
+    # Create second active ride directly in DB (bypassing lock for testing edge case)
+    # This shouldn't happen in real scenario due to locks, but testing the query behavior
+    await test_db.execute(
+        """
+        INSERT INTO rides (ride_id, user_id, vehicle_id, start_station_id, is_degraded_report, start_time)
+        VALUES (?, ?, ?, ?, FALSE, ?)
+        """,
+        ("RIDE_MULTI_ACTIVE_002", "USER_MULTI_RIDES", "V002", 2, start_time_2)
     )
+    await test_db.commit()
 
     # Get active ride should return the first one (query returns only one row)
     active_ride = await repo.get_active_ride_by_user(test_db, "USER_MULTI_RIDES")
-    
+
     assert active_ride is not None
     assert isinstance(active_ride, Ride)
     assert active_ride.user_id == "USER_MULTI_RIDES"

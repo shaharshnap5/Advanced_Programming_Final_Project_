@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import aiosqlite
 from src.models.station import Station, StationWithDistance
+from src.models.lock_manager import LockManager
 
 
 class StationsRepository:
@@ -109,3 +110,36 @@ class StationsRepository:
         rows = await cursor.fetchall()
         await cursor.close()
         return [dict(row) for row in rows]
+
+    async def check_and_reserve_capacity(self, db: aiosqlite.Connection, station_id: int) -> bool:
+        """
+        Atomically check if a station has capacity and reserve a spot.
+        Uses locking to prevent race conditions when multiple vehicles try to dock simultaneously.
+
+        Returns: True if capacity is available and reserved, False otherwise
+        """
+        lock_manager = LockManager()
+
+        async with lock_manager.station_lock(station_id):
+            # Get station info and current capacity
+            cursor = await db.execute(
+                """
+                SELECT s.max_capacity, COALESCE(COUNT(v.vehicle_id), 0) as current_capacity
+                FROM stations s
+                LEFT JOIN vehicles v ON s.station_id = v.station_id
+                WHERE s.station_id = ?
+                GROUP BY s.station_id
+                """,
+                (station_id,)
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+
+            if not row:
+                return False
+
+            max_capacity = row["max_capacity"]
+            current_capacity = row["current_capacity"]
+
+            # Check if there's space
+            return current_capacity < max_capacity
