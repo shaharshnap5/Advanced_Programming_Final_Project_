@@ -31,7 +31,6 @@ async def create_user(
     try:
         result = await service.create_user(
             db,
-            data.user_id,
             data.first_name,
             data.last_name,
             data.email,

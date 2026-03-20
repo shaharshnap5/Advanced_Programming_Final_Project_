@@ -27,7 +27,6 @@ async def test_create_user_success():
                 response = await client.post(
                     "/users/register",
                     json={
-                        "user_id": "USER001",
                         "first_name": "Test",
                         "last_name": "User",
                         "email": "test@example.com",
@@ -54,7 +53,6 @@ async def test_create_user_conflict():
                 response = await client.post(
                     "/users/register",
                     json={
-                        "user_id": "USER001",
                         "first_name": "Test",
                         "last_name": "User",
                         "email": "test@example.com",
@@ -72,4 +70,4 @@ async def test_create_user_invalid_payload():
 
     assert response.status_code == 400
     missing_fields = {error["loc"][-1] for error in response.json()["detail"]}
-    assert {"user_id", "first_name", "last_name", "email"}.issubset(missing_fields)
+    assert {"first_name", "last_name", "email"}.issubset(missing_fields)
