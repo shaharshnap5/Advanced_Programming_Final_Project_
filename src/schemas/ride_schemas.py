@@ -15,3 +15,10 @@ class EndRidePayload(BaseModel):
     lon: float
     lat: float
 
+
+class EndRideResponse(BaseModel):
+    """Response after ending a ride."""
+    end_station_id: int
+    payment_charged: int
+    active_users: list[str]
+
