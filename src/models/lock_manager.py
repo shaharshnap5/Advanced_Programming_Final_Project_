@@ -3,7 +3,7 @@ Centralized lock manager for handling concurrent access to shared resources.
 Provides locks for vehicles, users, stations, and rides to prevent race conditions.
 """
 import asyncio
-from typing import Dict
+from typing import Dict, Union
 from contextlib import asynccontextmanager
 
 
@@ -33,6 +33,32 @@ class LockManager:
         return cls._instance
 
     @asynccontextmanager
+    async def _generic_lock(
+        self,
+        resource_id: Union[str, int],
+        locks_dict: Dict,
+        master_lock: asyncio.Lock
+    ):
+        """
+        Generic lock acquisition for any resource type.
+
+        Args:
+            resource_id: The ID of the resource to lock
+            locks_dict: The dictionary storing locks for this resource type
+            master_lock: The master lock protecting the locks dictionary
+        """
+        async with master_lock:
+            if resource_id not in locks_dict:
+                locks_dict[resource_id] = asyncio.Lock()
+            lock = locks_dict[resource_id]
+
+        async with lock:
+            try:
+                yield
+            finally:
+                pass
+
+    @asynccontextmanager
     async def vehicle_lock(self, vehicle_id: str):
         """
         Acquire a lock for a specific vehicle to prevent concurrent modifications.
@@ -42,16 +68,8 @@ class LockManager:
                 # Perform vehicle operations
                 pass
         """
-        async with self._vehicle_master_lock:
-            if vehicle_id not in self._vehicle_locks:
-                self._vehicle_locks[vehicle_id] = asyncio.Lock()
-            lock = self._vehicle_locks[vehicle_id]
-
-        async with lock:
-            try:
-                yield
-            finally:
-                pass
+        async with self._generic_lock(vehicle_id, self._vehicle_locks, self._vehicle_master_lock):
+            yield
 
     @asynccontextmanager
     async def user_lock(self, user_id: str):
@@ -63,16 +81,8 @@ class LockManager:
                 # Check and modify user's active ride
                 pass
         """
-        async with self._user_master_lock:
-            if user_id not in self._user_locks:
-                self._user_locks[user_id] = asyncio.Lock()
-            lock = self._user_locks[user_id]
-
-        async with lock:
-            try:
-                yield
-            finally:
-                pass
+        async with self._generic_lock(user_id, self._user_locks, self._user_master_lock):
+            yield
 
     @asynccontextmanager
     async def station_lock(self, station_id: int):
@@ -84,16 +94,8 @@ class LockManager:
                 # Check capacity and dock vehicle
                 pass
         """
-        async with self._station_master_lock:
-            if station_id not in self._station_locks:
-                self._station_locks[station_id] = asyncio.Lock()
-            lock = self._station_locks[station_id]
-
-        async with lock:
-            try:
-                yield
-            finally:
-                pass
+        async with self._generic_lock(station_id, self._station_locks, self._station_master_lock):
+            yield
 
     @asynccontextmanager
     async def ride_lock(self, ride_id: str):
@@ -105,16 +107,8 @@ class LockManager:
                 # Modify ride state
                 pass
         """
-        async with self._ride_master_lock:
-            if ride_id not in self._ride_locks:
-                self._ride_locks[ride_id] = asyncio.Lock()
-            lock = self._ride_locks[ride_id]
-
-        async with lock:
-            try:
-                yield
-            finally:
-                pass
+        async with self._generic_lock(ride_id, self._ride_locks, self._ride_master_lock):
+            yield
 
     @asynccontextmanager
     async def multi_vehicle_lock(self, *vehicle_ids: str):
