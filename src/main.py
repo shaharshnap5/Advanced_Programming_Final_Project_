@@ -14,14 +14,9 @@ app = FastAPI(title="Advanced Programming Final Project")
 # Global exception handler for 404 errors (non-existent routes)
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    if exc.status_code == 404:
-        return JSONResponse(
-            status_code=404,
-            content={"error": "Not Found", "message": f"The requested route '{request.url.path}' does not exist"}
-        )
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.detail}
+        content={"detail": exc.detail}
     )
 
 
