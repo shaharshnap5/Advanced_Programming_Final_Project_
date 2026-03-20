@@ -25,12 +25,6 @@ class RideService:
         """Return User objects currently in active rides."""
         return await self.rides_repo.get_active_users(db)
 
-    async def list_active_user_ids(self, db: aiosqlite.Connection) -> list[str]:
-        """Return user IDs currently in active rides (legacy)."""
-        users = await self.list_active_users(db)
-        return [user.user_id for user in users]
-
-
     async def start_new_ride(
             self, db: aiosqlite.Connection, user_id: str, lon: float, lat: float
     ) -> Ride:
