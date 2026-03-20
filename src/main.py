@@ -6,7 +6,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from src.controllers.stations_controller import router as stations_router
 from src.controllers.vehicles_controller import router as vehicles_router
 from src.controllers.users_controller import router as users_router
-from src.controllers.rides_controller import router as ride_router
+from src.controllers.rides_controller import router as ride_router, legacy_router as legacy_ride_router
 
 app = FastAPI(title="Advanced Programming Final Project")
 
@@ -42,6 +42,7 @@ app.include_router(stations_router)
 app.include_router(vehicles_router)
 app.include_router(users_router)
 app.include_router(ride_router)
+app.include_router(legacy_ride_router)
 
 
 @app.get("/")

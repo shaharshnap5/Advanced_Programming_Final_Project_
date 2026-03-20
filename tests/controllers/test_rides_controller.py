@@ -162,6 +162,35 @@ async def test_start_ride_none_return():
 
 
 @pytest.mark.asyncio
+async def test_start_ride_legacy_path_with_vehicle_id_payload():
+    """Legacy /ride/start should remain supported for backward compatibility."""
+    from fastapi.testclient import TestClient
+
+    client = TestClient(app)
+    expected_ride = {
+        "ride_id": "RIDE_LEGACY_001",
+        "user_id": "USER001",
+        "vehicle_id": "V001",
+        "start_station_id": 1,
+        "end_station_id": None,
+        "start_time": "2026-03-20T12:00:00",
+        "end_time": None,
+        "is_degraded_report": False,
+    }
+
+    with patch("src.controllers.rides_controller.service.start_new_ride", new_callable=AsyncMock) as mock_start:
+        mock_start.return_value = Ride(**expected_ride)
+
+        response = client.post("/ride/start", json={"user_id": "USER001", "vehicle_id": "V001"})
+
+        assert response.status_code == 200
+        assert response.json()["ride_id"] == "RIDE_LEGACY_001"
+        mock_start.assert_called_once()
+        _, kwargs = mock_start.call_args
+        assert kwargs["vehicle_id"] == "V001"
+
+
+@pytest.mark.asyncio
 async def test_get_active_users_via_api():
     from httpx import AsyncClient, ASGITransport
 

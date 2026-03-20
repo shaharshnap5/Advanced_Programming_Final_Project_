@@ -26,50 +26,74 @@ class RideService:
         return await self.rides_repo.get_active_users(db)
 
     async def start_new_ride(
-            self, db: aiosqlite.Connection, user_id: str, lon: float, lat: float
+            self,
+            db: aiosqlite.Connection,
+            user_id: str,
+            lon: float | None = None,
+            lat: float | None = None,
+            vehicle_id: str | None = None,
     ) -> Ride:
+        # Ensure the user exists before creating a ride record.
+        user = await self.users_repo.get_by_id(db, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User {user_id} not found.")
+
         # 0. Check if user already has an active ride
         active_ride = await self.rides_repo.get_active_ride_by_user(db, user_id)
         if active_ride:
             raise HTTPException(status_code=409, detail="User already has an active ride.")
 
-        # 1. Find the nearest station THAT ACTUALLY HAS VEHICLES
-        nearest_station = await self.stations_service.get_nearest_station_with_vehicles(db, lon=lon, lat=lat)
+        if vehicle_id:
+            picked_vehicle = await self.vehicles_repo.get_by_id(db, vehicle_id)
+            if not picked_vehicle:
+                raise HTTPException(status_code=404, detail=f"Vehicle {vehicle_id} not found.")
+            if picked_vehicle.status.value != "available":
+                raise HTTPException(status_code=409, detail=f"Vehicle {vehicle_id} is not available.")
+            if picked_vehicle.station_id is None:
+                raise HTTPException(status_code=409, detail=f"Vehicle {vehicle_id} is not docked at any station.")
+            if not picked_vehicle.can_rent():
+                raise HTTPException(status_code=409, detail="Vehicle is not eligible for rent (battery/maintenance restrictions).")
 
-        if not nearest_station:
-            # If absolutely no stations in the city have vehicles, we throw a 404
-            raise HTTPException(status_code=404, detail="No available vehicles found in the entire system.")
+            station_id = picked_vehicle.station_id
+        else:
+            if lon is None or lat is None:
+                raise HTTPException(status_code=400, detail="Either vehicle_id or both lon and lat are required.")
 
-        # Get the station_id from the Station model
-        station_id = nearest_station.station_id
+            # 1. Find the nearest station THAT ACTUALLY HAS VEHICLES
+            nearest_station = await self.stations_service.get_nearest_station_with_vehicles(db, lon=lon, lat=lat)
 
-        # 2. Ask the warehouse for ALL available vehicles at that specific station
-        available_vehicles = await self.vehicles_repo.get_available_vehicles_by_station(db, station_id)
+            if not nearest_station:
+                # If absolutely no stations in the city have vehicles, we throw a 404
+                raise HTTPException(status_code=404, detail="No available vehicles found in the entire system.")
 
-        # 3. Apply the Deterministic Rule (Scooter > E-bike > Bike, then by ID)
-        type_priority = {
-            "scooter": 1,
-            "electric_bicycle": 2,
-            "bicycle": 3
-        }
+            # Get the station_id from the Station model
+            station_id = nearest_station.station_id
 
-        # 👇 FIX 1: Bracket notation inside the lambda function 👇
-        sorted_vehicles = sorted(
-            available_vehicles,
-            key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id)
-        )
+            # 2. Ask the warehouse for ALL available vehicles at that specific station
+            available_vehicles = await self.vehicles_repo.get_available_vehicles_by_station(db, station_id)
 
-        # Pick the best vehicle that can actually be rented under its subtype rules.
-        picked_vehicle = next((vehicle for vehicle in sorted_vehicles if vehicle.can_rent()), None)
-        if not picked_vehicle:
-            raise HTTPException(status_code=409, detail="No available vehicles have sufficient charge/eligibility.")
+            # 3. Apply the Deterministic Rule (Scooter > E-bike > Bike, then by ID)
+            type_priority = {
+                "scooter": 1,
+                "electric_bicycle": 2,
+                "bicycle": 3
+            }
+
+            sorted_vehicles = sorted(
+                available_vehicles,
+                key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id)
+            )
+
+            # Pick the best vehicle that can actually be rented under its subtype rules.
+            picked_vehicle = next((vehicle for vehicle in sorted_vehicles if vehicle.can_rent()), None)
+            if not picked_vehicle:
+                raise HTTPException(status_code=409, detail="No available vehicles have sufficient charge/eligibility.")
 
         # 4. Generate a unique ID for the new ride
         new_ride_id = str(uuid.uuid4())
 
         # 5. Capture the ride start time once and persist the state to the database
         start_time = datetime.now()
-        # 👇 FIX 2: Bracket notation for the database calls 👇
         await self.vehicles_repo.mark_vehicle_as_rented(db, picked_vehicle.vehicle_id)
         await self.rides_repo.create_active_ride(
             db,
@@ -81,7 +105,6 @@ class RideService:
         )
 
         # 6. Return the exact JSON shape
-        # 👇 FIX 3: Use the captured start_time instead of calling datetime.now() again 👇
         return Ride(
             ride_id=new_ride_id,
             user_id=user_id,
