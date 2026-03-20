@@ -12,10 +12,19 @@ app = FastAPI(title="Advanced Programming Final Project")
 
 
 # Global exception handler for 404 errors (non-existent routes)
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: StarletteHTTPException):
+    # Check if this is a route that doesn't exist vs a resource not found
+    # If detail is "Not Found", it means the route doesn't exist
+    # If detail is something else (e.g., "Station not found"), it's from application logic
+    if exc.detail == "Not Found":
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Not Found", "message": f"Route '{request.url.path}' does not exist"}
+        )
+    # Otherwise preserve the original detail message from the application
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=404,
         content={"detail": exc.detail}
     )
 
