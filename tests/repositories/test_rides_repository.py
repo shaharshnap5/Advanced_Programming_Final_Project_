@@ -158,6 +158,34 @@ async def test_create_active_ride_with_specific_timestamp(test_db):
 
 
 @pytest.mark.asyncio
+async def test_get_active_user_ids_returns_only_incomplete_rides(test_db):
+    repo = RidesRepository()
+
+    # Create a user and one active ride + one completed ride
+    await test_db.execute(
+        "INSERT INTO users (user_id, first_name, last_name, email, payment_token) VALUES (?, ?, ?, ?, ?)",
+        ("USER_ACTIVE", "Active", "User", "active@example.com", "tok_active")
+    )
+
+    await test_db.execute(
+        "INSERT INTO rides (ride_id, user_id, vehicle_id, start_station_id, end_station_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)",
+        ("RIDE_ACTIVE", "USER_ACTIVE", "V001", 1, None)
+    )
+
+    await test_db.execute(
+        "INSERT INTO rides (ride_id, user_id, vehicle_id, start_station_id, end_station_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        ("RIDE_COMPLETE", "USER_ACTIVE", "V002", 2, 3)
+    )
+
+    await test_db.commit()
+
+    active_users = await repo.get_active_users(test_db)
+    assert len(active_users) == 1
+    assert active_users[0].user_id == "USER_ACTIVE"
+    assert active_users[0].email == "active@example.com"
+
+
+@pytest.mark.asyncio
 async def test_get_active_ride_by_user_returns_ride_object(test_db):
     """Test that get_active_ride_by_user returns a Ride object, not a database row."""
     repo = RidesRepository()

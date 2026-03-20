@@ -9,13 +9,15 @@ from fastapi import HTTPException
 
 from src.schemas.ride_schemas import RideStartRequest
 from src.models.ride import Ride
+from src.models.user import User
+from src.main import app
 
 
 @pytest.mark.asyncio
 async def test_start_ride_success():
     """Test successfully starting a ride."""
     # Import the endpoint function directly
-    from src.controllers.ride_controller import start_ride
+    from src.controllers.rides_controller import start_ride
 
     # Create mock request
     request = RideStartRequest(user_id="USER001", lon=34.0, lat=32.0)
@@ -34,7 +36,7 @@ async def test_start_ride_success():
     )
 
     # We need to patch the RideService within the controller
-    with patch('src.controllers.ride_controller.service') as mock_service:
+    with patch('src.controllers.rides_controller.service') as mock_service:
         mock_service.start_new_ride = AsyncMock(return_value=expected_ride)
 
         # Call the endpoint
@@ -50,12 +52,12 @@ async def test_start_ride_success():
 @pytest.mark.asyncio
 async def test_start_ride_no_vehicles_available():
     """Test starting a ride when no vehicles are available."""
-    from src.controllers.ride_controller import start_ride
+    from src.controllers.rides_controller import start_ride
 
     request = RideStartRequest(user_id="USER001", lon=34.0, lat=32.0)
     mock_db = Mock()
 
-    with patch('src.controllers.ride_controller.service') as mock_service:
+    with patch('src.controllers.rides_controller.service') as mock_service:
         # Service raises HTTPException(404) when no vehicles are available
         mock_service.start_new_ride = AsyncMock(
             side_effect=HTTPException(status_code=404, detail="Could not start ride.")
@@ -73,12 +75,12 @@ async def test_start_ride_no_vehicles_available():
 @pytest.mark.asyncio
 async def test_start_ride_service_error():
     """Test handling of service errors."""
-    from src.controllers.ride_controller import start_ride
+    from src.controllers.rides_controller import start_ride
 
     request = RideStartRequest(user_id="USER001", lon=34.0, lat=32.0)
     mock_db = Mock()
 
-    with patch('src.controllers.ride_controller.service') as mock_service:
+    with patch('src.controllers.rides_controller.service') as mock_service:
         mock_service.start_new_ride = AsyncMock(
             side_effect=ValueError("User not found")
         )
@@ -94,12 +96,12 @@ async def test_start_ride_service_error():
 @pytest.mark.asyncio
 async def test_start_ride_unexpected_error():
     """Test handling of unexpected server errors."""
-    from src.controllers.ride_controller import start_ride
+    from src.controllers.rides_controller import start_ride
 
     request = RideStartRequest(user_id="USER001", lon=34.0, lat=32.0)
     mock_db = Mock()
 
-    with patch('src.controllers.ride_controller.service') as mock_service:
+    with patch('src.controllers.rides_controller.service') as mock_service:
         mock_service.start_new_ride = AsyncMock(
             side_effect=RuntimeError("Database connection failed")
         )
@@ -114,7 +116,7 @@ async def test_start_ride_unexpected_error():
 @pytest.mark.asyncio
 async def test_start_ride_returns_ride_model():
     """Test that start_ride returns a valid Ride model."""
-    from src.controllers.ride_controller import start_ride
+    from src.controllers.rides_controller import start_ride
 
     request = RideStartRequest(user_id="USER_MODEL", lon=34.5, lat=32.5)
     mock_db = Mock()
@@ -128,7 +130,7 @@ async def test_start_ride_returns_ride_model():
         is_degraded_report=False
     )
 
-    with patch('src.controllers.ride_controller.service') as mock_service:
+    with patch('src.controllers.rides_controller.service') as mock_service:
         mock_service.start_new_ride = AsyncMock(return_value=expected_ride)
 
         result = await start_ride(request, mock_db)
@@ -142,12 +144,12 @@ async def test_start_ride_returns_ride_model():
 @pytest.mark.asyncio
 async def test_start_ride_none_return():
     """Test handling when service returns None."""
-    from src.controllers.ride_controller import start_ride
+    from src.controllers.rides_controller import start_ride
 
     request = RideStartRequest(user_id="USER001", lon=34.0, lat=32.0)
     mock_db = Mock()
 
-    with patch('src.controllers.ride_controller.service') as mock_service:
+    with patch('src.controllers.rides_controller.service') as mock_service:
         mock_service.start_new_ride = AsyncMock(return_value=None)
 
         # Should raise HTTPException
@@ -159,6 +161,40 @@ async def test_start_ride_none_return():
         assert "Could not start ride" in exc_info.value.detail
 
 
+@pytest.mark.asyncio
+async def test_get_active_users_via_api():
+    from httpx import AsyncClient, ASGITransport
+
+    with patch("src.controllers.rides_controller.get_db") as mock_get_db:
+        mock_db = AsyncMock()
+        mock_get_db.return_value.__aenter__.return_value = mock_db
+
+        with patch("src.controllers.rides_controller.service.list_active_users") as mock_list_active:
+            mock_list_active.return_value = [
+                User(user_id="USER_A", first_name="A", last_name="A", email="a@example.com", payment_token="tok1"),
+                User(user_id="USER_B", first_name="B", last_name="B", email="b@example.com", payment_token="tok2"),
+            ]
+
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.get("/rides/active-users")
+
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "user_id": "USER_A",
+                    "first_name": "A",
+                    "last_name": "A",
+                    "email": "a@example.com",
+                    "payment_token": "tok1",
+                },
+                {
+                    "user_id": "USER_B",
+                    "first_name": "B",
+                    "last_name": "B",
+                    "email": "b@example.com",
+                    "payment_token": "tok2",
+                },
+            ]
 # ============ END RIDE TESTS ============
 
 @pytest.mark.asyncio
@@ -174,7 +210,7 @@ async def test_end_ride_endpoint_valid_payload():
         "lat": 32.5,
     }
     
-    with patch("src.controllers.ride_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
+    with patch("src.controllers.rides_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
         mock_end_ride.return_value = {
             "end_station_id": 5,
             "payment_charged": 15,
@@ -189,7 +225,7 @@ async def test_end_ride_endpoint_valid_payload():
             },
         }
         
-        response = client.post("/ride/end", json=payload)
+        response = client.post("/rides/end", json=payload)
         
         assert response.status_code == 200
         data = response.json()
@@ -212,7 +248,7 @@ async def test_end_ride_endpoint_missing_ride_id():
         # Missing: "ride_id"
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     # Pydantic validation should fail
     assert response.status_code == 422
@@ -231,7 +267,7 @@ async def test_end_ride_endpoint_missing_lon():
         # Missing: "lon"
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     assert response.status_code == 422
 
@@ -249,7 +285,7 @@ async def test_end_ride_endpoint_missing_lat():
         # Missing: "lat"
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     assert response.status_code == 422
 
@@ -261,7 +297,7 @@ async def test_end_ride_endpoint_invalid_json():
     from src.main import app
     
     client = TestClient(app)
-    response = client.post("/ride/end", content="{invalid json")
+    response = client.post("/rides/end", content="{invalid json")
     
     # FastAPI returns 422 for validation errors  
     assert response.status_code == 422
@@ -280,7 +316,7 @@ async def test_end_ride_endpoint_wrong_types():
         "lat": 32.5,
     }
     
-    response = client.post("/ride/end", json=payload)
+    response = client.post("/rides/end", json=payload)
     
     assert response.status_code == 422
 
@@ -298,10 +334,10 @@ async def test_end_ride_endpoint_service_error():
         "lat": 32.5,
     }
     
-    with patch("src.controllers.ride_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
+    with patch("src.controllers.rides_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
         mock_end_ride.side_effect = HTTPException(status_code=404, detail="Ride not found")
         
-        response = client.post("/ride/end", json=payload)
+        response = client.post("/rides/end", json=payload)
         
         assert response.status_code == 404
         assert "Ride not found" in response.json()["detail"]
@@ -320,7 +356,7 @@ async def test_end_ride_endpoint_response_structure():
         "lat": 32.5,
     }
     
-    with patch("src.controllers.ride_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
+    with patch("src.controllers.rides_controller.service.end_ride", new_callable=AsyncMock) as mock_end_ride:
         mock_end_ride.return_value = {
             "end_station_id": 1,
             "payment_charged": 15,
@@ -335,7 +371,7 @@ async def test_end_ride_endpoint_response_structure():
             },
         }
         
-        response = client.post("/ride/end", json=payload)
+        response = client.post("/rides/end", json=payload)
         
         assert response.status_code == 200
         data = response.json()
