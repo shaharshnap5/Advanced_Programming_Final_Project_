@@ -48,58 +48,6 @@ async def test_get_vehicle_by_id_not_found():
 
 
 @pytest.mark.asyncio
-async def test_list_vehicles():
-    mock_repo = Mock(spec=VehiclesRepository)
-    mock_repo.list_all = AsyncMock(return_value=[
-        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=5, last_treated_date=date(2025, 1, 1)),
-        Vehicle(vehicle_id="V002", station_id=1, vehicle_type=VehicleType.scooter, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 2))
-    ])
-    
-    service = VehiclesService(repository=mock_repo)
-    mock_db = Mock()
-    
-    result = await service.list_vehicles(mock_db)
-    
-    assert len(result) == 2
-    assert result[0].vehicle_id == "V001"
-    mock_repo.list_all.assert_called_once_with(mock_db)
-
-
-@pytest.mark.asyncio
-async def test_list_vehicles_by_station():
-    mock_repo = Mock(spec=VehiclesRepository)
-    mock_repo.list_by_station = AsyncMock(return_value=[
-        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=5, last_treated_date=date(2025, 1, 1))
-    ])
-    
-    service = VehiclesService(repository=mock_repo)
-    mock_db = Mock()
-    
-    result = await service.list_vehicles_by_station(mock_db, 1)
-    
-    assert len(result) == 1
-    assert result[0].station_id == 1
-    mock_repo.list_by_station.assert_called_once_with(mock_db, 1)
-
-@pytest.mark.asyncio
-async def test_list_vehicles_eligible_for_treatment():
-    """Test listing vehicles eligible for treatment."""
-    mock_repo = Mock(spec=VehiclesRepository)
-    mock_repo.list_vehicles_eligible_for_treatment = AsyncMock(return_value=[
-        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 1)),
-        Vehicle(vehicle_id="V002", station_id=1, vehicle_type=VehicleType.scooter, status=VehicleStatus.available, rides_since_last_treated=7, last_treated_date=date(2025, 1, 2))
-    ])
-    
-    service = VehiclesService(repository=mock_repo)
-    mock_db = Mock()
-    
-    result = await service.list_vehicles_eligible_for_treatment(mock_db)
-    
-    assert len(result) == 2
-    mock_repo.list_vehicles_eligible_for_treatment.assert_called_once_with(mock_db)
-
-
-@pytest.mark.asyncio
 async def test_treat_vehicle_degraded_with_station():
     """Test treating a degraded vehicle that already has a station."""
     mock_repo = Mock(spec=VehiclesRepository)

@@ -5,6 +5,20 @@ from src.models.station import Station, StationWithDistance
 
 
 class StationsRepository:
+    async def _fetch_vehicles_for_station(self, db: aiosqlite.Connection, station_id: int) -> list[str]:
+        """Fetch all vehicle IDs docked at a specific station."""
+        cursor = await db.execute(
+            """
+            SELECT vehicle_id
+            FROM vehicles
+            WHERE station_id = ?
+            """,
+            (station_id,),
+        )
+        rows = await cursor.fetchall()
+        await cursor.close()
+        return [row[0] for row in rows]
+
     async def get_by_id(self, db: aiosqlite.Connection, station_id: int) -> Station | None:
         cursor = await db.execute(
             """
@@ -16,7 +30,14 @@ class StationsRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        return Station(**dict(row)) if row else None
+        if not row:
+            return None
+
+        station_dict = dict(row)
+        # Fetch vehicles docked at this station
+        vehicles = await self._fetch_vehicles_for_station(db, station_id)
+        station_dict['vehicles'] = vehicles
+        return Station(**station_dict)
 
     async def get_nearest(self, db: aiosqlite.Connection, lon: float, lat: float) -> StationWithDistance | None:
         cursor = await db.execute(
@@ -36,10 +57,15 @@ class StationsRepository:
         )
         row = await cursor.fetchone()
         await cursor.close()
-        if row:
-            row_dict = dict(row)
-            return StationWithDistance(**row_dict)
-        return None
+        if not row:
+            return None
+
+        row_dict = dict(row)
+        station_id = row_dict['station_id']
+        # Fetch vehicles docked at this station
+        vehicles = await self._fetch_vehicles_for_station(db, station_id)
+        row_dict['vehicles'] = vehicles
+        return StationWithDistance(**row_dict)
 
     async def get_stations_with_available_vehicles(self, db: aiosqlite.Connection) -> list[Station]:
         # The JOIN ensures we only get stations that have at least one 'available' vehicle
@@ -52,7 +78,15 @@ class StationsRepository:
         db.row_factory = aiosqlite.Row
         async with db.execute(query) as cursor:
             rows = await cursor.fetchall()
-            return [Station(**dict(row)) for row in rows]
+            stations = []
+            for row in rows:
+                station_dict = dict(row)
+                station_id = station_dict['station_id']
+                # Fetch all vehicles docked at this station
+                vehicles = await self._fetch_vehicles_for_station(db, station_id)
+                station_dict['vehicles'] = vehicles
+                stations.append(Station(**station_dict))
+            return stations
 
     async def list_with_capacity(self, db: aiosqlite.Connection) -> list[dict]:
         """

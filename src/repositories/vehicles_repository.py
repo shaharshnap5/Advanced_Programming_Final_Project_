@@ -51,38 +51,6 @@ class VehiclesRepository:
         await cursor.close()
         return self._to_vehicle(row) if row else None
 
-    async def list_all(self, db: aiosqlite.Connection) -> list[Vehicle]:
-        cursor = await db.execute(
-            self.BASE_SELECT
-        )
-        rows = await cursor.fetchall()
-        await cursor.close()
-        return [self._to_vehicle(row) for row in rows]
-
-    async def list_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
-        cursor = await db.execute(
-            f"""
-            {self.BASE_SELECT}
-            WHERE v.station_id = ?
-            """,
-            (station_id,),
-        )
-        rows = await cursor.fetchall()
-        await cursor.close()
-        return [self._to_vehicle(row) for row in rows]
-
-    async def list_vehicles_eligible_for_treatment(self, db: aiosqlite.Connection) -> list[Vehicle]:
-        """List vehicles eligible for treatment: degraded OR rides >= 7."""
-        cursor = await db.execute(
-            f"""
-            {self.BASE_SELECT}
-            WHERE v.status = 'degraded' OR v.rides_since_last_treated >= 7
-            """
-        )
-        rows = await cursor.fetchall()
-        await cursor.close()
-        return [self._to_vehicle(row) for row in rows]
-
     async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> bool:
         """Perform maintenance on a vehicle.
         Sets: status='available', rides_since_last_treated=0, last_treated_date=today.

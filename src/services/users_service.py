@@ -11,10 +11,20 @@ class UsersService:
     def __init__(self, repository: UsersRepository | None = None) -> None:
         self._repository = repository or UsersRepository()
 
+    async def _generate_unique_user_id(self, db: aiosqlite.Connection) -> str:
+        """Generate a unique server-side user identifier."""
+
+        for _ in range(10):
+            candidate = str(uuid.uuid4())
+            existing = await self._repository.get_by_id(db, candidate)
+            if not existing:
+                return candidate
+
+        raise ValueError("Failed to generate unique user id")
+
     async def create_user(
         self,
         db: aiosqlite.Connection,
-        user_id: str,
         first_name: str,
         last_name: str,
         email: str,
@@ -25,11 +35,9 @@ class UsersService:
             User: The created user model
 
         Raises:
-            ValueError: if the user already exists.
+            ValueError: if user id generation fails.
         """
-        existing = await self._repository.get_by_id(db, user_id)
-        if existing:
-            raise ValueError("User already exists")
+        user_id = await self._generate_unique_user_id(db)
 
         # Mocked billing token
         token = uuid.uuid4().hex
