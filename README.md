@@ -60,3 +60,47 @@ See [docs/TESTING.md](docs/TESTING.md) for full details.
 - [docs/DB_SETUP.md](docs/DB_SETUP.md)
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 - [docs/TESTING.md](docs/TESTING.md)
+
+## Persistence & Recovery Strategy
+
+This project uses SQLite as the single source of truth for runtime state.
+
+- Runtime database file: `data/app.db`
+- Connection library: `aiosqlite` (see `src/db.py`)
+- Durability settings per request:
+	- `PRAGMA journal_mode=WAL;`
+	- `PRAGMA synchronous=FULL;`
+	- `PRAGMA foreign_keys=ON;`
+
+### Initialization vs Runtime State
+
+- CSV files under `data/*.csv` are bootstrap inputs only.
+- `python scripts/init_db.py` loads CSV data into SQLite.
+- After startup, all state changes (rides, vehicle status, battery values) are persisted only in `data/app.db`.
+- Restarting Uvicorn does not reset state unless `--reset-db` is explicitly used in the init script.
+
+### Transaction Integrity
+
+- FastAPI request scope uses `get_db()` to enforce commit/rollback semantics.
+- Multi-step flows (for example, ride start and ride end) are executed atomically in the service layer:
+	- begin transaction
+	- perform all related repository writes
+	- commit only if all writes succeed
+	- rollback on any exception
+- This prevents partial updates (for example, vehicle rented but ride row missing) during failures.
+
+### Verified Recovery (Crash/Restart QA)
+
+Run the automated recovery check:
+
+```bash
+python scripts/verify_recovery.py
+```
+
+The script performs this sequence:
+
+1. Starts the API server on a temporary port.
+2. Starts and ends a ride (to mutate vehicle + ride persisted state).
+3. Stops the server (simulated crash/stop).
+4. Restarts the server.
+5. Verifies with GET endpoints that ride completion and vehicle battery/state were preserved.

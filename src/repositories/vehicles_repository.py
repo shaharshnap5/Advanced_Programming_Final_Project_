@@ -1,5 +1,5 @@
 from __future__ import annotations
-from src.models.vehicle import Vehicle, VehicleStatus, VehicleFactory
+from src.models.vehicle import Vehicle, VehicleStatus, VehicleType, VehicleFactory
 
 import aiosqlite
 
@@ -28,12 +28,12 @@ class VehiclesRepository:
         return VehicleFactory.from_row(dict(row))
 
     async def _update_electric_battery(self, db: aiosqlite.Connection, vehicle: Vehicle) -> None:
-        if vehicle.vehicle_type.value == "electric_bicycle":
+        if vehicle.vehicle_type == VehicleType.ebike:
             await db.execute(
                 "UPDATE ebikes SET battery = ? WHERE vehicle_id = ?",
                 (vehicle.battery, vehicle.vehicle_id),
             )
-        elif vehicle.vehicle_type.value == "scooter":
+        elif vehicle.vehicle_type == VehicleType.scooter:
             await db.execute(
                 "UPDATE scooters SET battery = ? WHERE vehicle_id = ?",
                 (vehicle.battery, vehicle.vehicle_id),
@@ -116,7 +116,6 @@ class VehiclesRepository:
             ),
         )
         await self._update_electric_battery(db, vehicle)
-        await db.commit()
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
@@ -131,7 +130,6 @@ class VehiclesRepository:
             """,
             (status, vehicle_id),
         )
-        await db.commit()
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
@@ -166,7 +164,6 @@ class VehiclesRepository:
             """,
             (vehicle.status.value, vehicle.station_id, vehicle_id),
         )
-        await db.commit()
         return vehicle
 
     async def get_available_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
@@ -206,7 +203,6 @@ class VehiclesRepository:
             ),
         )
         await self._update_electric_battery(db, vehicle)
-        await db.commit()
         affected = cursor.rowcount
         await cursor.close()
 

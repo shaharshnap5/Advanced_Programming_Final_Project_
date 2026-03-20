@@ -13,6 +13,17 @@ router = APIRouter(prefix="/ride", tags=["Rides"])
 
 service = RideService()
 
+
+@router.get("/{ride_id}", response_model=Ride)
+async def get_ride(
+    ride_id: str,
+    db: aiosqlite.Connection = Depends(get_db)
+):
+    ride = await service.rides_repo.get_by_id(db, ride_id)
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    return ride
+
 @router.post("/start", response_model=Ride)  # Make sure this matches your return schema
 async def start_ride(
         request: RideStartRequest,

@@ -34,7 +34,6 @@ class UsersRepository:
             """,
             (user_id, first_name, last_name, email, payment_token),
         )
-        await db.commit()
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0
@@ -51,7 +50,6 @@ class UsersRepository:
             """,
             (ride_id, user_id),
         )
-        await db.commit()
         affected = cursor.rowcount
         await cursor.close()
         return affected > 0

@@ -1,4 +1,3 @@
-import datetime
 import uuid
 import aiosqlite
 from fastapi import HTTPException
@@ -10,6 +9,7 @@ from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
 from src.repositories.users_repository import UsersRepository
 from src.utilis.distance import calculate_euclidean_distance
+from src.models.vehicle import VehicleType
 
 
 
@@ -20,6 +20,10 @@ class RideService:
         self.rides_repo = RidesRepository()
         self.stations_service = StationsService()
         self.users_repo = UsersRepository()
+
+    @staticmethod
+    def _can_manage_transactions(db: aiosqlite.Connection) -> bool:
+        return isinstance(db, aiosqlite.Connection)
 
 
     async def start_new_ride(
@@ -45,15 +49,15 @@ class RideService:
 
         # 3. Apply the Deterministic Rule (Scooter > E-bike > Bike, then by ID)
         type_priority = {
-            "scooter": 1,
-            "electric_bicycle": 2,
-            "bicycle": 3
+            VehicleType.scooter: 1,
+            VehicleType.ebike: 2,
+            VehicleType.bike: 3,
         }
 
         # 👇 FIX 1: Bracket notation inside the lambda function 👇
         sorted_vehicles = sorted(
             available_vehicles,
-            key=lambda v: (type_priority.get(v.vehicle_type.value, 4), v.vehicle_id)
+            key=lambda v: (type_priority.get(v.vehicle_type, 4), v.vehicle_id)
         )
 
         # Pick the best vehicle that can actually be rented under its subtype rules.
@@ -64,18 +68,27 @@ class RideService:
         # 4. Generate a unique ID for the new ride
         new_ride_id = str(uuid.uuid4())
 
-        # 5. Capture the ride start time once and persist the state to the database
+        # 5. Capture ride start time once and persist state atomically.
         start_time = datetime.now()
-        # 👇 FIX 2: Bracket notation for the database calls 👇
-        await self.vehicles_repo.mark_vehicle_as_rented(db, picked_vehicle.vehicle_id)
-        await self.rides_repo.create_active_ride(
-            db,
-            new_ride_id,
-            user_id,
-            picked_vehicle.vehicle_id,
-            station_id,
-            start_time,
-        )
+        manage_tx = self._can_manage_transactions(db)
+        if manage_tx:
+            await db.execute("BEGIN")
+        try:
+            await self.vehicles_repo.mark_vehicle_as_rented(db, picked_vehicle.vehicle_id)
+            await self.rides_repo.create_active_ride(
+                db,
+                new_ride_id,
+                user_id,
+                picked_vehicle.vehicle_id,
+                station_id,
+                start_time,
+            )
+            if manage_tx:
+                await db.commit()
+        except Exception:
+            if manage_tx:
+                await db.rollback()
+            raise
 
         # 6. Return the exact JSON shape
         # 👇 FIX 3: Use the captured start_time instead of calling datetime.now() again 👇
@@ -135,14 +148,36 @@ class RideService:
         vehicle = await self.vehicles_repo.get_by_id(db, ride.vehicle_id)
         if not vehicle:
             raise HTTPException(status_code=400, detail=f"Vehicle {ride.vehicle_id} not found.")
-        
-        # Dock the vehicle at the station
-        docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
-        if not docked_vehicle:
-            raise HTTPException(status_code=400, detail=f"Failed to dock vehicle {ride.vehicle_id}.")
-        
+
+        manage_tx = self._can_manage_transactions(db)
+        if manage_tx:
+            await db.execute("BEGIN")
+        try:
+            # Dock the vehicle and persist ride completion in one transaction.
+            docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
+            if not docked_vehicle:
+                raise HTTPException(status_code=400, detail=f"Failed to dock vehicle {ride.vehicle_id}.")
+
+            ride_updated = True
+            if manage_tx:
+                ride_updated = await self.rides_repo.complete_ride(
+                    db,
+                    ride_id=ride_id,
+                    end_station_id=station_id,
+                    end_time=datetime.now(),
+                    is_degraded_report=False,
+                )
+            if not ride_updated:
+                raise HTTPException(status_code=400, detail=f"Failed to complete ride {ride_id}.")
+
+            if manage_tx:
+                await db.commit()
+        except Exception:
+            if manage_tx:
+                await db.rollback()
+            raise
+
         # Step 5: Calculate and process payment
-        # For now, return a fixed 15 ILS
         payment_charged = 15
         
         # Return response object (only required fields per specification)
