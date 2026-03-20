@@ -11,9 +11,7 @@ from src.services.stations_service import StationsService
 from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
 from src.repositories.users_repository import UsersRepository
-from src.repositories.stations_repository import StationsRepository
 from src.utilis.distance import calculate_euclidean_distance
-from src.models.lock_manager import LockManager
 
 
 
@@ -22,9 +20,7 @@ class RideService:
         self.vehicles_repo = VehiclesRepository()
         self.rides_repo = RidesRepository()
         self.stations_service = StationsService()
-        self.stations_repo = StationsRepository()
         self.users_repo = UsersRepository()
-        self.lock_manager = LockManager()
 
     @staticmethod
     def _ensure(condition: bool, status_code: int, detail: str) -> None:
@@ -115,79 +111,59 @@ class RideService:
         lat: float,
     ) -> dict:
         """
-        End an active ride with the following flow (with proper locking):
+        End an active ride with the following flow:
         1. Verify ride exists in active rides
         2. Find nearest station with available capacity
-        3. Atomically check capacity and dock the vehicle
+        3. Dock the vehicle at that station
         4. Increment vehicle's ride counter (sets to degraded if > 10)
         5. Charge the user 15 ILS (0 if degraded report)
         6. Clear user's active ride
         """
-
+        
         # Step 1: Verify ride exists
         ride = await self.rides_repo.get_by_id(db, ride_id)
         if not ride:
             raise HTTPException(status_code=404, detail=f"Ride with ID {ride_id} not found.")
-
+        
         # Step 2: Find nearest station with capacity
         stations = await self.stations_service.get_stations_with_capacity(db)
         if not stations:
             raise HTTPException(status_code=400, detail="No stations available to dock the vehicle.")
-
+        
         # Filter only stations with free capacity
         available_stations = [
-            s for s in stations
+            s for s in stations 
             if s["current_capacity"] < s["max_capacity"]
         ]
-
+        
         if not available_stations:
             raise HTTPException(status_code=400, detail="No station with free capacity available.")
-
-        # Sort stations by distance
-        sorted_stations = sorted(
+        
+        # Find nearest by euclidean distance
+        nearest_station = min(
             available_stations,
             key=lambda s: calculate_euclidean_distance(lat, lon, s["lat"], s["lon"])
         )
-
-        # Step 3 & 4: Try to dock at nearest available station with capacity
+        
+        station_id = nearest_station["station_id"]
+        
+        # Step 3 & 4: Get vehicle and dock it (incrementing rides counter)
         vehicle = await self.vehicles_repo.get_by_id(db, ride.vehicle_id)
         if not vehicle:
             raise HTTPException(status_code=400, detail=f"Vehicle {ride.vehicle_id} not found.")
-
-        docked_station_id = None
-        docked_vehicle = None
-        for station in sorted_stations:
-            station_id = station["station_id"]
-
-            # Check capacity with lock
-            has_capacity = await self.stations_repo.check_and_reserve_capacity(db, station_id)
-
-            if has_capacity:
-                try:
-                    # Dock the vehicle at the station (with vehicle lock)
-                    docked_vehicle = await self.vehicles_repo.dock_vehicle(
-                        db,
-                        ride.vehicle_id,
-                        station_id
-                    )
-                    if docked_vehicle:
-                        docked_station_id = station_id
-                        break
-                except ValueError:
-                    # If docking fails, try next station
-                    continue
-
-        if not docked_station_id or not docked_vehicle:
-            raise HTTPException(status_code=400, detail="Unable to dock vehicle - all stations reached capacity.")
-
-
+        
+        # Dock the vehicle at the station
+        docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
+        if not docked_vehicle:
+            raise HTTPException(status_code=400, detail=f"Failed to dock vehicle {ride.vehicle_id}.")
+        
         # Step 5: Calculate and process payment
         # For now, return a fixed 15 ILS
         payment_charged = 15
-
+        
         # Return response object (only required fields per specification)
         return {
-            "end_station_id": docked_station_id,
+            "end_station_id": station_id,
             "payment_charged": payment_charged,
             "vehicle": docked_vehicle.model_dump(mode="json"),
         }
