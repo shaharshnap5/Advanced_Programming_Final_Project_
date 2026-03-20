@@ -39,45 +39,6 @@ class VehiclesRepository:
                 (vehicle.battery, vehicle.vehicle_id),
             )
 
-    async def create_vehicle(self, db: aiosqlite.Connection, vehicle: Vehicle) -> Vehicle:
-        await db.execute(
-            """
-            INSERT INTO vehicles(
-                vehicle_id,
-                station_id,
-                vehicle_type,
-                status,
-                rides_since_last_treated,
-                last_treated_date
-            ) VALUES(?, ?, ?, ?, ?, ?)
-            """,
-            (
-                vehicle.vehicle_id,
-                vehicle.station_id,
-                vehicle.vehicle_type.value,
-                vehicle.status.value,
-                vehicle.rides_since_last_treated,
-                vehicle.last_treated_date.isoformat() if vehicle.last_treated_date else None,
-            ),
-        )
-
-        if vehicle.vehicle_type.value == "electric_bicycle":
-            await db.execute(
-                "INSERT INTO ebikes(vehicle_id, battery) VALUES(?, ?)",
-                (vehicle.vehicle_id, vehicle.battery if vehicle.battery is not None else 100),
-            )
-        elif vehicle.vehicle_type.value == "scooter":
-            await db.execute(
-                "INSERT INTO scooters(vehicle_id, battery) VALUES(?, ?)",
-                (vehicle.vehicle_id, vehicle.battery if vehicle.battery is not None else 100),
-            )
-
-        await db.commit()
-        created = await self.get_by_id(db, vehicle.vehicle_id)
-        if not created:
-            raise RuntimeError(f"Failed to create vehicle {vehicle.vehicle_id}")
-        return created
-
     async def get_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
         cursor = await db.execute(
             f"""
