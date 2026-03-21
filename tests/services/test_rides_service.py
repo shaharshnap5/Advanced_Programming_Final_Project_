@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch, ANY
 from datetime import datetime, date
 from fastapi import HTTPException
 
@@ -400,6 +400,7 @@ async def test_end_ride_success():
         is_degraded_report=False
     )
     rides_repo.get_by_id = AsyncMock(return_value=mock_ride)
+    rides_repo.complete_ride = AsyncMock(return_value=True)
     
     # Mock vehicle
     mock_vehicle = Vehicle(
@@ -467,6 +468,15 @@ async def test_end_ride_success():
     # Verify station was selected (nearest one)
     assert result["end_station_id"] == 1
     assert result["payment_charged"] == 15
+    rides_repo.complete_ride.assert_called_once_with(
+        mock_db,
+        ride_id="RIDE001",
+        end_station_id=1,
+        end_time=ANY,
+    )
+
+    complete_ride_call = rides_repo.complete_ride.call_args.kwargs
+    assert isinstance(complete_ride_call["end_time"], datetime)
 
 
 @pytest.mark.asyncio

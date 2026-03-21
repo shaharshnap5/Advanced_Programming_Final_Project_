@@ -99,6 +99,27 @@ class RidesRepository:
             )
             await db.commit()
 
+    async def complete_ride(
+        self,
+        db: aiosqlite.Connection,
+        ride_id: str,
+        end_station_id: int,
+        end_time: datetime,
+    ) -> bool:
+        """Mark an active ride as completed by setting end station and end time."""
+        cursor = await db.execute(
+            """
+            UPDATE rides
+            SET end_station_id = ?, end_time = ?
+            WHERE ride_id = ? AND end_time IS NULL
+            """,
+            (end_station_id, end_time, ride_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        return affected > 0
+
     async def get_active_users(self, db: aiosqlite.Connection) -> list[User]:
         """Returns the list of active User objects for currently active rides."""
         cursor = await db.execute(
