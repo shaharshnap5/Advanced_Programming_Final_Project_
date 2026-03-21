@@ -225,6 +225,92 @@ async def test_complete_ride_updates_end_fields(test_db):
 
 
 @pytest.mark.asyncio
+async def test_complete_ride_marks_degraded_and_allows_null_end_station(test_db):
+    """Completing a degraded ride should support NULL end_station and set is_degraded_report."""
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+    end_time = datetime(2026, 3, 17, 10, 45, 0)
+
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_DEGRADED_001",
+        user_id="USER_DEGRADED_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time,
+    )
+
+    updated = await repo.complete_ride(
+        test_db,
+        ride_id="RIDE_DEGRADED_001",
+        end_station_id=None,
+        end_time=end_time,
+        is_degraded_report=True,
+    )
+
+    assert updated is True
+
+    cursor = await test_db.execute(
+        "SELECT end_station_id, end_time, is_degraded_report FROM rides WHERE ride_id = ?",
+        ("RIDE_DEGRADED_001",),
+    )
+    row = await cursor.fetchone()
+    await cursor.close()
+
+    assert row is not None
+    assert row["end_station_id"] is None
+    assert row["is_degraded_report"] == 1
+    assert row["end_time"] is not None
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_vehicle_returns_active_ride(test_db):
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_BY_VEHICLE_001",
+        user_id="USER_BY_VEHICLE_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time,
+    )
+
+    active_ride = await repo.get_active_ride_by_vehicle(test_db, "V001")
+
+    assert active_ride is not None
+    assert active_ride.ride_id == "RIDE_BY_VEHICLE_001"
+    assert active_ride.vehicle_id == "V001"
+
+
+@pytest.mark.asyncio
+async def test_get_active_ride_by_vehicle_returns_none_when_completed(test_db):
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+    end_time = datetime(2026, 3, 17, 10, 45, 0)
+
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_BY_VEHICLE_002",
+        user_id="USER_BY_VEHICLE_002",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time,
+    )
+
+    await repo.complete_ride(
+        test_db,
+        ride_id="RIDE_BY_VEHICLE_002",
+        end_station_id=2,
+        end_time=end_time,
+    )
+
+    active_ride = await repo.get_active_ride_by_vehicle(test_db, "V001")
+    assert active_ride is None
+
+
+@pytest.mark.asyncio
 async def test_get_active_users_returns_empty_list_when_no_active_rides(test_db):
     """No active rides should return an empty list."""
     repo = RidesRepository()

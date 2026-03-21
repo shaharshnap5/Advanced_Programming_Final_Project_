@@ -105,6 +105,21 @@ class VehiclesRepository:
         await cursor.close()
         return affected > 0
 
+    async def mark_vehicle_degraded_and_detach(self, db: aiosqlite.Connection, vehicle_id: str) -> bool:
+        """Mark a vehicle as degraded and detach it from any station."""
+        cursor = await db.execute(
+            """
+            UPDATE vehicles
+            SET status = ?, station_id = NULL
+            WHERE vehicle_id = ?
+            """,
+            (VehicleStatus.degraded.value, vehicle_id),
+        )
+        await db.commit()
+        affected = cursor.rowcount
+        await cursor.close()
+        return affected > 0
+
     async def get_available_vehicle(self, db: aiosqlite.Connection, station_id: int) -> Vehicle | None:
         """Finds one available vehicle at the given station."""
         cursor = await db.execute(

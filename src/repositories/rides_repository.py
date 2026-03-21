@@ -60,6 +60,29 @@ class RidesRepository:
                 is_degraded_report=bool(row["is_degraded_report"])
             )
 
+    async def get_active_ride_by_vehicle(self, db: aiosqlite.Connection, vehicle_id: str) -> Ride | None:
+        """Fetches the active ride for a vehicle, or None if no active ride exists."""
+        cursor = await db.execute(
+            "SELECT * FROM rides WHERE vehicle_id = ? AND end_time IS NULL",
+            (vehicle_id,),
+        )
+        row = await cursor.fetchone()
+        await cursor.close()
+
+        if row is None:
+            return None
+
+        return Ride(
+            ride_id=row["ride_id"],
+            user_id=row["user_id"],
+            vehicle_id=row["vehicle_id"],
+            start_station_id=row["start_station_id"],
+            end_station_id=row["end_station_id"],
+            start_time=datetime.fromisoformat(row["start_time"]) if isinstance(row["start_time"], str) else row["start_time"],
+            end_time=datetime.fromisoformat(row["end_time"]) if (row["end_time"] and isinstance(row["end_time"], str)) else row["end_time"],
+            is_degraded_report=bool(row["is_degraded_report"]),
+        )
+
     async def create_active_ride(
         self,
         db: aiosqlite.Connection,
@@ -103,17 +126,18 @@ class RidesRepository:
         self,
         db: aiosqlite.Connection,
         ride_id: str,
-        end_station_id: int,
+        end_station_id: int | None,
         end_time: datetime,
+        is_degraded_report: bool = False,
     ) -> bool:
-        """Mark an active ride as completed by setting end station and end time."""
+        """Mark an active ride as completed by setting end station/end time and degraded flag."""
         cursor = await db.execute(
             """
             UPDATE rides
-            SET end_station_id = ?, end_time = ?
+            SET end_station_id = ?, end_time = ?, is_degraded_report = ?
             WHERE ride_id = ? AND end_time IS NULL
             """,
-            (end_station_id, end_time, ride_id),
+            (end_station_id, end_time, int(is_degraded_report), ride_id),
         )
         await db.commit()
         affected = cursor.rowcount

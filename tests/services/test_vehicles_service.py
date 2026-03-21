@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, Mock
-from datetime import date
+from unittest.mock import AsyncMock, Mock, ANY
+from datetime import date, datetime
 
 from src.services.vehicles_service import VehiclesService
 from src.repositories.vehicles_repository import VehiclesRepository
+from src.repositories.rides_repository import RidesRepository
+from src.models.ride import Ride
 from src.models.vehicle import VehicleType, VehicleStatus, Vehicle
 
 
@@ -70,18 +72,63 @@ async def test_treat_vehicle_degraded_with_station():
 async def test_report_vehicle_degraded():
     """Service should mark a vehicle degraded when reported."""
     mock_repo = Mock(spec=VehiclesRepository)
+    mock_rides_repo = Mock(spec=RidesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
         Vehicle(vehicle_id="V005", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
-        Vehicle(vehicle_id="V005", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1))
+        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1))
     ])
-    mock_repo.update_vehicle_status = AsyncMock(return_value=True)
+    mock_repo.mark_vehicle_degraded_and_detach = AsyncMock(return_value=True)
+    mock_rides_repo.get_active_ride_by_vehicle = AsyncMock(return_value=None)
 
-    service = VehiclesService(repository=mock_repo)
+    service = VehiclesService(repository=mock_repo, rides_repository=mock_rides_repo)
     mock_db = Mock()
 
     result = await service.report_vehicle_degraded(mock_db, "V005")
     assert result.status == VehicleStatus.degraded
-    mock_repo.update_vehicle_status.assert_called_once_with(mock_db, "V005", VehicleStatus.degraded)
+    assert result.station_id is None
+    mock_repo.mark_vehicle_degraded_and_detach.assert_called_once_with(mock_db, "V005")
+
+
+@pytest.mark.asyncio
+async def test_report_vehicle_degraded_auto_completes_active_ride_with_zero_charge_flag():
+    """Service should auto-complete an active ride as degraded when reporting vehicle breakdown."""
+    mock_repo = Mock(spec=VehiclesRepository)
+    mock_rides_repo = Mock(spec=RidesRepository)
+
+    active_ride = Ride(
+        ride_id="RIDE_ACTIVE_1",
+        user_id="USER001",
+        vehicle_id="V005",
+        start_station_id=1,
+        end_station_id=None,
+        start_time=datetime(2026, 3, 21, 10, 0, 0),
+        end_time=None,
+        is_degraded_report=False,
+    )
+
+    mock_repo.get_by_id = AsyncMock(side_effect=[
+        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.rented, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
+        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
+    ])
+    mock_repo.mark_vehicle_degraded_and_detach = AsyncMock(return_value=True)
+    mock_rides_repo.get_active_ride_by_vehicle = AsyncMock(return_value=active_ride)
+    mock_rides_repo.complete_ride = AsyncMock(return_value=True)
+
+    service = VehiclesService(repository=mock_repo, rides_repository=mock_rides_repo)
+    mock_db = Mock()
+
+    result = await service.report_vehicle_degraded(mock_db, "V005")
+
+    assert result.status == VehicleStatus.degraded
+    assert result.station_id is None
+    mock_rides_repo.complete_ride.assert_called_once_with(
+        mock_db,
+        ride_id="RIDE_ACTIVE_1",
+        end_station_id=None,
+        end_time=ANY,
+        is_degraded_report=True,
+    )
+    mock_repo.mark_vehicle_degraded_and_detach.assert_called_once_with(mock_db, "V005")
 
 
 @pytest.mark.asyncio
@@ -104,7 +151,7 @@ async def test_report_vehicle_degraded_already_degraded():
         await service.report_vehicle_degraded(mock_db, "V006")
 
     # Verify that update_vehicle_status was never called
-    mock_repo.update_vehicle_status.assert_not_called()
+    mock_repo.mark_vehicle_degraded_and_detach.assert_not_called()
 
 
 @pytest.mark.asyncio
