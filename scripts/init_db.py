@@ -29,7 +29,7 @@ async def init_db(reset_db: bool = False) -> None:
             await db.executescript(
                 """
                 DROP TABLE IF EXISTS rides;
-                DROP TABLE IF EXISTS ebikes;
+                DROP TABLE IF EXISTS electric_bicycles;
                 DROP TABLE IF EXISTS scooters;
                 DROP TABLE IF EXISTS users;
                 DROP TABLE IF EXISTS vehicles;
@@ -54,7 +54,7 @@ async def init_db(reset_db: bool = False) -> None:
 
         if "battery" not in vehicles.columns:
             vehicles["battery"] = vehicles["vehicle_type"].apply(
-                lambda vehicle_type: 100 if vehicle_type in {VehicleType.ebike.value, VehicleType.scooter.value} else None
+                lambda vehicle_type: 100 if vehicle_type in {VehicleType.electric_bicycle.value, VehicleType.scooter.value} else None
             )
 
         await db.executemany(
@@ -71,12 +71,12 @@ async def init_db(reset_db: bool = False) -> None:
             ]].itertuples(index=False, name=None),
         )
 
-        ebikes = vehicles[vehicles["vehicle_type"] == VehicleType.ebike.value][['vehicle_id', 'battery']]
+        electric_bicycles = vehicles[vehicles["vehicle_type"] == VehicleType.electric_bicycle.value][['vehicle_id', 'battery']]
         scooters = vehicles[vehicles["vehicle_type"] == VehicleType.scooter.value][['vehicle_id', 'battery']]
 
         await db.executemany(
-            "INSERT OR IGNORE INTO ebikes(vehicle_id, battery) VALUES(?, ?)",
-            ebikes.itertuples(index=False, name=None),
+            "INSERT OR IGNORE INTO electric_bicycles(vehicle_id, battery) VALUES(?, ?)",
+            electric_bicycles.itertuples(index=False, name=None),
         )
         await db.executemany(
             "INSERT OR IGNORE INTO scooters(vehicle_id, battery) VALUES(?, ?)",

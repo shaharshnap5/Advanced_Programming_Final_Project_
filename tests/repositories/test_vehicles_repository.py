@@ -16,7 +16,7 @@ async def test_get_by_id(test_db):
     assert isinstance(vehicle, Vehicle)
     assert vehicle.vehicle_id == "V001"
     assert vehicle.station_id == 1
-    assert vehicle.vehicle_type == VehicleType.bike
+    assert vehicle.vehicle_type == VehicleType.bicycle
     assert vehicle.status == VehicleStatus.available
     assert vehicle.rides_since_last_treated == 5
 

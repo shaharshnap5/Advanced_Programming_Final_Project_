@@ -34,7 +34,7 @@ async def test_start_new_ride_success():
         return_value=[
             Vehicle(
                 vehicle_id="V001",
-                vehicle_type=VehicleType.bike,
+                vehicle_type=VehicleType.bicycle,
                 station_id=1,
                 status=VehicleStatus.available,
                 rides_since_last_treated=0,
@@ -46,7 +46,7 @@ async def test_start_new_ride_success():
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
         return_value=Vehicle(
             vehicle_id="V001",
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             station_id=None,
             status=VehicleStatus.rented,
             rides_since_last_treated=0,
@@ -125,9 +125,9 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
     # Return multiple vehicles with different types
     mock_vehicles_repo.get_available_vehicles_by_station = AsyncMock(
         return_value=[
-            Vehicle(vehicle_id="V001", vehicle_type=VehicleType.bike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="V001", vehicle_type=VehicleType.bicycle, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
             Vehicle(vehicle_id="V002", vehicle_type=VehicleType.scooter, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
-            Vehicle(vehicle_id="V003", vehicle_type=VehicleType.ebike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="V003", vehicle_type=VehicleType.electric_bicycle, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
         ]
     )
 
@@ -161,8 +161,8 @@ async def test_start_new_ride_vehicle_type_priority_scooter():
 
 
 @pytest.mark.asyncio
-async def test_start_new_ride_vehicle_type_priority_ebike():
-    """Test that e-bikes are prioritized over bicycles."""
+async def test_start_new_ride_vehicle_type_priority_electric_bicycle():
+    """Test that electric_bicycles are prioritized over bicycles."""
     mock_stations_service = Mock(spec=StationsService)
     mock_vehicles_repo = Mock(spec=VehiclesRepository)
     mock_rides_repo = Mock(spec=RidesRepository)
@@ -171,18 +171,18 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
         return_value=Station(station_id=1, name="Station 1", lat=32.0, lon=34.0, max_capacity=10)
     )
 
-    # Return bikes and e-bikes (no scooters)
+    # Return bicycles and electric_bicycles (no scooters)
     mock_vehicles_repo.get_available_vehicles_by_station = AsyncMock(
         return_value=[
-            Vehicle(vehicle_id="V001", vehicle_type=VehicleType.bike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
-            Vehicle(vehicle_id="V003", vehicle_type=VehicleType.ebike, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="V001", vehicle_type=VehicleType.bicycle, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
+            Vehicle(vehicle_id="V003", vehicle_type=VehicleType.electric_bicycle, station_id=1, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today()),
         ]
     )
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
         return_value=Vehicle(
             vehicle_id="V003",
-            vehicle_type=VehicleType.ebike,
+            vehicle_type=VehicleType.electric_bicycle,
             station_id=None,
             status=VehicleStatus.rented,
             rides_since_last_treated=0,
@@ -203,7 +203,7 @@ async def test_start_new_ride_vehicle_type_priority_ebike():
 
     result = await service.start_new_ride(mock_db, user_id="USER001", lon=34.0, lat=32.0)
 
-    # E-bike should be selected
+    # E-bicycle should be selected
     assert result.vehicle_id == "V003"
 
 
@@ -268,14 +268,14 @@ async def test_start_new_ride_returns_correct_model():
 
     mock_vehicles_repo.get_available_vehicles_by_station = AsyncMock(
         return_value=[
-            Vehicle(vehicle_id="V_TEST", vehicle_type=VehicleType.bike, station_id=5, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
+            Vehicle(vehicle_id="V_TEST", vehicle_type=VehicleType.bicycle, station_id=5, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
         ]
     )
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
         return_value=Vehicle(
             vehicle_id="V_TEST",
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             station_id=None,
             status=VehicleStatus.rented,
             rides_since_last_treated=0,
@@ -337,14 +337,14 @@ async def test_start_new_ride_creates_database_entry():
 
     mock_vehicles_repo.get_available_vehicles_by_station = AsyncMock(
         return_value=[
-            Vehicle(vehicle_id="V_NEW", vehicle_type=VehicleType.bike, station_id=2, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
+            Vehicle(vehicle_id="V_NEW", vehicle_type=VehicleType.bicycle, station_id=2, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
         ]
     )
 
     mock_vehicles_repo.mark_vehicle_as_rented = AsyncMock(
         return_value=Vehicle(
             vehicle_id="V_NEW",
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             station_id=None,
             status=VehicleStatus.rented,
             rides_since_last_treated=0,
@@ -405,7 +405,7 @@ async def test_end_ride_success():
     # Mock vehicle
     mock_vehicle = Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -416,7 +416,7 @@ async def test_end_ride_success():
     # Mock docked vehicle
     docked_vehicle = Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=1,
@@ -626,7 +626,7 @@ async def test_end_ride_payment_fixed_15_ils():
     # Mock vehicle
     mock_vehicle = Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -678,7 +678,7 @@ async def test_end_ride_selects_nearest_station():
     # Mock vehicle
     mock_vehicle = Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,

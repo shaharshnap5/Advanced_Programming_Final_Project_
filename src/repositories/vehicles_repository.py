@@ -20,7 +20,7 @@ class VehiclesRepository:
                 ELSE NULL
             END AS battery
         FROM vehicles v
-        LEFT JOIN ebikes e ON v.vehicle_id = e.vehicle_id
+        LEFT JOIN electric_bicycles e ON v.vehicle_id = e.vehicle_id
         LEFT JOIN scooters s ON v.vehicle_id = s.vehicle_id
     """
 
@@ -31,7 +31,7 @@ class VehiclesRepository:
     async def _update_electric_battery(self, db: aiosqlite.Connection, vehicle: Vehicle) -> None:
         if vehicle.vehicle_type.value == "electric_bicycle":
             await db.execute(
-                "UPDATE ebikes SET battery = ? WHERE vehicle_id = ?",
+                "UPDATE electric_bicycles SET battery = ? WHERE vehicle_id = ?",
                 (vehicle.battery, vehicle.vehicle_id),
             )
         elif vehicle.vehicle_type.value == "scooter":

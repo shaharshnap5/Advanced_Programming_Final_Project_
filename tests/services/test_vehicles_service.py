@@ -17,7 +17,7 @@ async def test_get_vehicle_by_id():
     mock_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
         station_id=1,
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,
         rides_since_last_treated=5,
         last_treated_date=date(2025, 1, 1)
@@ -31,7 +31,7 @@ async def test_get_vehicle_by_id():
     assert result is not None
     assert isinstance(result, Vehicle)
     assert result.vehicle_id == "V001"
-    assert result.vehicle_type == VehicleType.bike
+    assert result.vehicle_type == VehicleType.bicycle
     mock_repo.get_by_id.assert_called_once_with(mock_db, "V001")
 
 
@@ -54,8 +54,8 @@ async def test_treat_vehicle_degraded_with_station():
     """Test treating a degraded vehicle that already has a station."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 1)),
-        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
+        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bicycle, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 1)),
+        Vehicle(vehicle_id="V001", station_id=1, vehicle_type=VehicleType.bicycle, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
     ])
     mock_repo.treat_vehicle = AsyncMock(return_value=True)
     
@@ -74,8 +74,8 @@ async def test_report_vehicle_degraded():
     mock_repo = Mock(spec=VehiclesRepository)
     mock_rides_repo = Mock(spec=RidesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        Vehicle(vehicle_id="V005", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
-        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1))
+        Vehicle(vehicle_id="V005", station_id=1, vehicle_type=VehicleType.bicycle, status=VehicleStatus.available, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
+        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bicycle, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1))
     ])
     mock_repo.mark_vehicle_degraded_and_detach = AsyncMock(return_value=True)
     mock_rides_repo.get_active_ride_by_vehicle = AsyncMock(return_value=None)
@@ -107,8 +107,8 @@ async def test_report_vehicle_degraded_auto_completes_active_ride_with_zero_char
     )
 
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.rented, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
-        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
+        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bicycle, status=VehicleStatus.rented, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
+        Vehicle(vehicle_id="V005", station_id=None, vehicle_type=VehicleType.bicycle, status=VehicleStatus.degraded, rides_since_last_treated=2, last_treated_date=date(2025, 1, 1)),
     ])
     mock_repo.mark_vehicle_degraded_and_detach = AsyncMock(return_value=True)
     mock_rides_repo.get_active_ride_by_vehicle = AsyncMock(return_value=active_ride)
@@ -138,7 +138,7 @@ async def test_report_vehicle_degraded_already_degraded():
     mock_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V006",
         station_id=1,
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.degraded,
         rides_since_last_treated=2,
         last_treated_date=date(2025, 1, 1)
@@ -190,7 +190,7 @@ async def test_treat_vehicle_not_eligible():
     """Test that treatment fails for non-eligible vehicle."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(return_value=Vehicle(
-        vehicle_id="V003", station_id=1, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=3, last_treated_date=date(2025, 1, 3)
+        vehicle_id="V003", station_id=1, vehicle_type=VehicleType.bicycle, status=VehicleStatus.available, rides_since_last_treated=3, last_treated_date=date(2025, 1, 3)
     ))
 
     service = VehiclesService(repository=mock_repo)
@@ -205,7 +205,7 @@ async def test_treat_vehicle_degraded_needs_station():
     """Test that treatment fails for degraded vehicle without station."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(return_value=Vehicle(
-        vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 4)
+        vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bicycle, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 4)
     ))
 
     service = VehiclesService(repository=mock_repo)
@@ -220,8 +220,8 @@ async def test_treat_vehicle_degraded_assign_station():
     """Test treating a degraded vehicle by assigning a station."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
-        Vehicle(vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 4)),
-        Vehicle(vehicle_id="V004", station_id=3, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
+        Vehicle(vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bicycle, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 4)),
+        Vehicle(vehicle_id="V004", station_id=3, vehicle_type=VehicleType.bicycle, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
     ])
     mock_repo.treat_vehicle = AsyncMock(return_value=True)
     
