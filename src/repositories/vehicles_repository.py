@@ -90,20 +90,6 @@ class VehiclesRepository:
         await cursor.close()
         return affected > 0
 
-    async def update_vehicle_status(self, db: aiosqlite.Connection, vehicle_id: str, status: str) -> bool:
-        """Set the status field for a given vehicle."""
-        cursor = await db.execute(
-            """
-            UPDATE vehicles
-            SET status = ?
-            WHERE vehicle_id = ?
-            """,
-            (status, vehicle_id),
-        )
-        await db.commit()
-        affected = cursor.rowcount
-        await cursor.close()
-        return affected > 0
 
     async def mark_vehicle_degraded_and_detach(self, db: aiosqlite.Connection, vehicle_id: str) -> bool:
         """Mark a vehicle as degraded and detach it from any station."""
@@ -120,19 +106,6 @@ class VehiclesRepository:
         await cursor.close()
         return affected > 0
 
-    async def get_available_vehicle(self, db: aiosqlite.Connection, station_id: int) -> Vehicle | None:
-        """Finds one available vehicle at the given station."""
-        cursor = await db.execute(
-            f"""
-            {self.BASE_SELECT}
-            WHERE v.station_id = ? AND v.status = 'available' 
-            LIMIT 1
-            """,
-            (station_id,)
-        )
-        row = await cursor.fetchone()
-        await cursor.close()
-        return self._to_vehicle(row) if row else None
 
     async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
         """Rents a vehicle through its domain model and persists the state with locking."""
