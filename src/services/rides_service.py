@@ -42,8 +42,8 @@ class RideService:
 
         type_priority = {
             VehicleType.scooter: 1,
-            VehicleType.ebike: 2,
-            VehicleType.bike: 3,
+            VehicleType.electric_bicycle: 2,
+            VehicleType.bicycle: 3,
         }
 
         sorted_vehicles = sorted(

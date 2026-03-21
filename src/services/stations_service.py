@@ -33,8 +33,8 @@ class StationsService:
         available_vehicles = await self._vehicles_repository.get_available_vehicles_by_station(db, station.station_id)
         type_priority = {
             VehicleType.scooter: 1,
-            VehicleType.ebike: 2,
-            VehicleType.bike: 3,
+            VehicleType.electric_bicycle: 2,
+            VehicleType.bicycle: 3,
         }
 
         if available_vehicles:

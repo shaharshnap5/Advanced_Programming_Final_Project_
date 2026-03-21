@@ -33,7 +33,7 @@ async def test_db():
     )
     await db.execute(
         "INSERT INTO vehicles (vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date) VALUES (?, ?, ?, ?, ?, ?)",
-        ("V001", 1, VehicleType.bike.value, "available", 5, "2025-01-01")
+        ("V001", 1, VehicleType.bicycle.value, "available", 5, "2025-01-01")
     )
     await db.execute(
         "INSERT INTO vehicles (vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date) VALUES (?, ?, ?, ?, ?, ?)",

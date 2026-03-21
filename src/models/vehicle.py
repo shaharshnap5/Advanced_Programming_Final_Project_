@@ -5,8 +5,8 @@ from enum import Enum
 from typing import Any, Mapping
 
 class VehicleType(str, Enum):
-    bike = 'bicycle'
-    ebike = 'electric_bicycle'
+    bicycle = 'bicycle'
+    electric_bicycle = 'electric_bicycle'
     scooter = 'scooter'
 
 class VehicleStatus(str, Enum):
@@ -108,21 +108,15 @@ class ElectricVehicle(Vehicle):
 
 
 
-class Bike(Vehicle):
-    vehicle_type: VehicleType = VehicleType.bike
+class Bicycle(Vehicle):
+    """Represents a standard bicycle vehicle."""
+    vehicle_type: VehicleType = VehicleType.bicycle
 
 
-class Bicycle(Bike):
-    """Backward-compatible alias for Bike."""
-
-
-class EBike(ElectricVehicle):
-    vehicle_type: VehicleType = VehicleType.ebike
+class ElectricBicycle(ElectricVehicle):
+    """Represents an electric bicycle vehicle."""
+    vehicle_type: VehicleType = VehicleType.electric_bicycle
     battery: int = 100
-
-
-class ElectricBicycle(EBike):
-    """Backward-compatible alias for EBike."""
 
 
 
@@ -143,8 +137,8 @@ class VehicleFactory:
         }
 
         v_type = {
-            "bike": Bicycle(vehicle_type=VehicleType.bike, **base_data),
-            "ebike": ElectricBicycle(vehicle_type=VehicleType.ebike, **base_data),
+            "bicycle": Bicycle(vehicle_type=VehicleType.bicycle, **base_data),
+            "electric_bicycle": ElectricBicycle(vehicle_type=VehicleType.electric_bicycle, **base_data),
             "scooter": Scooter(vehicle_type=VehicleType.scooter, **base_data),
         }
         return v_type[vehicle_type.lower()]
@@ -155,12 +149,12 @@ class VehicleFactory:
         payload = dict(row)
         type_value = payload.get("vehicle_type")
 
-        if type_value in {VehicleType.ebike.value, VehicleType.scooter.value} and payload.get("battery") is None:
+        if type_value in {VehicleType.electric_bicycle.value, VehicleType.scooter.value} and payload.get("battery") is None:
             payload["battery"] = 100
 
         constructor = {
-            VehicleType.bike.value: Bicycle,
-            VehicleType.ebike.value: ElectricBicycle,
+            VehicleType.bicycle.value: Bicycle,
+            VehicleType.electric_bicycle.value: ElectricBicycle,
             VehicleType.scooter.value: Scooter,
         }.get(type_value, Vehicle)
 

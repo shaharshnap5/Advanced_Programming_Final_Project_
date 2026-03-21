@@ -4,44 +4,45 @@ from datetime import date
 
 import pytest
 
-from src.models.vehicle import Bike, EBike, Scooter, VehicleStatus, VehicleType
+from src.models.vehicle import Bicycle, ElectricBicycle, Scooter, VehicleStatus, VehicleType
 
 
-def test_bike_return_vehicle_does_not_use_battery_logic():
-	bike = Bike(
-		vehicle_id="BIKE_POLY_001",
+
+def test_bicycle_return_vehicle_does_not_use_battery_logic():
+	bicycle = Bicycle(
+		vehicle_id="bicycle_POLY_001",
 		station_id=None,
-		vehicle_type=VehicleType.bike,
+		vehicle_type=VehicleType.bicycle,
 		status=VehicleStatus.rented,
 		rides_since_last_treated=0,
 		last_treated_date=None,
 		battery=None,
 	)
 
-	bike.return_vehicle(station_id=1)
+	bicycle.return_vehicle(station_id=1)
 
-	assert bike.station_id == 1
-	assert bike.status == VehicleStatus.available
-	assert bike.rides_since_last_treated == 1
-	assert bike.battery is None
+	assert bicycle.station_id == 1
+	assert bicycle.status == VehicleStatus.available
+	assert bicycle.rides_since_last_treated == 1
+	assert bicycle.battery is None
 
 
-def test_ebike_end_ride_drains_exactly_14_percent():
-	ebike = EBike(
-		vehicle_id="EBIKE_POLY_001",
+def test_electric_bicycle_end_ride_drains_exactly_14_percent():
+	electric_bicycle = ElectricBicycle(
+		vehicle_id="electric_bicycle_POLY_001",
 		station_id=None,
-		vehicle_type=VehicleType.ebike,
+		vehicle_type=VehicleType.electric_bicycle,
 		status=VehicleStatus.rented,
 		rides_since_last_treated=2,
 		last_treated_date=date.today(),
 		battery=100,
 	)
 
-	ebike.return_vehicle(station_id=3)
+	electric_bicycle.return_vehicle(station_id=3)
 
-	assert ebike.rides_since_last_treated == 3
-	assert ebike.battery == 86
-	assert ebike.status == VehicleStatus.available
+	assert electric_bicycle.rides_since_last_treated == 3
+	assert electric_bicycle.battery == 86
+	assert electric_bicycle.status == VehicleStatus.available
 
 
 def test_scooter_cannot_rent_below_14_battery():

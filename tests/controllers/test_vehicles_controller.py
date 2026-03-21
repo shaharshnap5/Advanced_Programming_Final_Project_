@@ -19,7 +19,7 @@ async def test_get_vehicle_success():
             mock_get.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
-                "vehicle_type": VehicleType.bike,
+                "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 5,
                 "last_treated_date": date(2025, 1, 1)
@@ -88,7 +88,7 @@ async def test_treat_vehicle_success():
             mock_treat.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
-                "vehicle_type": VehicleType.bike,
+                "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
                 "last_treated_date": date.today()
@@ -114,7 +114,7 @@ async def test_treat_vehicle_with_station():
             mock_treat.return_value = {
                 "vehicle_id": "V004",
                 "station_id": 3,
-                "vehicle_type": VehicleType.bike,
+                "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
                 "last_treated_date": date.today()
@@ -156,7 +156,7 @@ async def test_report_degraded_success():
             mock_report.return_value = {
                 "vehicle_id": "V010",
                 "station_id": 1,
-                "vehicle_type": VehicleType.bike,
+                "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.degraded,
                 "rides_since_last_treated": 3,
                 "last_treated_date": date(2025, 1, 1)

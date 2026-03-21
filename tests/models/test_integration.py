@@ -24,7 +24,7 @@ class TestCompleteFleetIntegration:
             lat=32.0,
             lon=34.0,
             max_capacity=20,
-            vehicles=["BIKE001", "EBIKE001", "SCOOTER001"]
+            vehicles=["BICYCLE001", "ELECTRIC_BICYCLE001", "SCOOTER001"]
         )
         station2 = Station(
             station_id=2,
@@ -32,7 +32,7 @@ class TestCompleteFleetIntegration:
             lat=32.1,
             lon=34.1,
             max_capacity=15,
-            vehicles=["BIKE002"]
+            vehicles=["BICYCLE002"]
         )
 
         # Create station dictionary
@@ -64,18 +64,18 @@ class TestCompleteFleetIntegration:
         }
 
         # Create vehicles with proper enums
-        bike = Bicycle(
-            vehicle_id="BIKE001",
+        bicycle = Bicycle(
+            vehicle_id="BICYCLE001",
             station_id=1,
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             status=VehicleStatus.available,
             rides_since_last_treated=3,
             last_treated_date=date.today()
         )
-        ebike = ElectricBicycle(
-            vehicle_id="EBIKE001",
+        electric_bicycle = ElectricBicycle(
+            vehicle_id="ELECTRIC_BICYCLE001",
             station_id=1,
-            vehicle_type=VehicleType.ebike,
+            vehicle_type=VehicleType.electric_bicycle,
             status=VehicleStatus.available,
             rides_since_last_treated=2,
             last_treated_date=date.today(),
@@ -102,8 +102,8 @@ class TestCompleteFleetIntegration:
             'station2': station2,
             'user1': user1,
             'user2': user2,
-            'bike': bike,
-            'ebike': ebike,
+            'bicycle': bicycle,
+            'electric_bicycle': electric_bicycle,
             'scooter': scooter
         }
 
@@ -113,40 +113,40 @@ class TestCompleteFleetIntegration:
         users = fleet_system['users']
         active_rides = fleet_system['active_rides']
         user = fleet_system['user1']
-        bike = fleet_system['bike']
+        bicycle = fleet_system['bicycle']
         station1 = fleet_system['station1']
         station2 = fleet_system['station2']
 
         # Verify user can start ride (stateless)
         assert user.can_start_ride() is True
 
-        # Rent the bike
-        bike.rent()
-        assert bike.status == VehicleStatus.rented
-        assert bike.station_id is None
+        # Rent the bicycle
+        bicycle.rent()
+        assert bicycle.status == VehicleStatus.rented
+        assert bicycle.station_id is None
 
-        # Remove bike from station
-        station1.remove_vehicle("BIKE001")
-        assert "BIKE001" not in station1.vehicles
+        # Remove bicycle from station
+        station1.remove_vehicle("BICYCLE001")
+        assert "BICYCLE001" not in station1.vehicles
 
         # Create and process ride
         ride = Ride(
             ride_id="RIDE001",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=False
         )
 
         # Return vehicle to different station
-        bike.return_vehicle(2)
-        assert bike.station_id == 2
-        assert bike.status == VehicleStatus.available  # Below threshold
+        bicycle.return_vehicle(2)
+        assert bicycle.station_id == 2
+        assert bicycle.status == VehicleStatus.available  # Below threshold
 
         # Add vehicle to new station
-        station2.add_vehicle("BIKE001")
-        assert "BIKE001" in station2.vehicles
+        station2.add_vehicle("BICYCLE001")
+        assert "BICYCLE001" in station2.vehicles
 
         # Process end of ride and charge user
         process_end_of_ride(user, ride)
@@ -158,24 +158,24 @@ class TestCompleteFleetIntegration:
         active_rides = fleet_system['active_rides']
         user1 = fleet_system['user1']
         user2 = fleet_system['user2']
-        bike = fleet_system['bike']
-        ebike = fleet_system['ebike']
+        bicycle = fleet_system['bicycle']
+        electric_bicycle = fleet_system['electric_bicycle']
         scooter = fleet_system['scooter']
         station1 = fleet_system['station1']
 
-        # User 1 rents bike
-        bike.rent()
-        station1.remove_vehicle("BIKE001")
-        assert bike.status == VehicleStatus.rented
+        # User 1 rents bicycle
+        bicycle.rent()
+        station1.remove_vehicle("BICYCLE001")
+        assert bicycle.status == VehicleStatus.rented
 
-        # User 2 rents ebike
-        ebike.rent()
-        station1.remove_vehicle("EBIKE001")
-        assert ebike.status == VehicleStatus.rented
+        # User 2 rents electric_bicycle
+        electric_bicycle.rent()
+        station1.remove_vehicle("ELECTRIC_BICYCLE001")
+        assert electric_bicycle.status == VehicleStatus.rented
 
         # Both vehicles are rented
-        assert bike.status == VehicleStatus.rented
-        assert ebike.status == VehicleStatus.rented
+        assert bicycle.status == VehicleStatus.rented
+        assert electric_bicycle.status == VehicleStatus.rented
         assert scooter.status == VehicleStatus.available
 
         # Verify station has correct count
@@ -187,29 +187,29 @@ class TestCompleteFleetIntegration:
         users = fleet_system['users']
         active_rides = fleet_system['active_rides']
         station1 = fleet_system['station1']
-        bike = fleet_system['bike']
-        ebike = fleet_system['ebike']
+        bicycle = fleet_system['bicycle']
+        electric_bicycle = fleet_system['electric_bicycle']
 
-        # Bike has 3 rides, artificially bump to above degradation threshold (>10)
-        bike.rides_since_last_treated = 11
-        bike.return_vehicle(1)
-        assert bike.status == VehicleStatus.degraded
+        # bicycle has 3 rides, artificially bump to above degradation threshold (>10)
+        bicycle.rides_since_last_treated = 11
+        bicycle.return_vehicle(1)
+        assert bicycle.status == VehicleStatus.degraded
 
-        # Treat the bike
-        bike.treat()
-        assert bike.status == VehicleStatus.available
-        assert bike.rides_since_last_treated == 0
-        assert bike.last_treated_date == date.today()
+        # Treat the bicycle
+        bicycle.treat()
+        assert bicycle.status == VehicleStatus.available
+        assert bicycle.rides_since_last_treated == 0
+        assert bicycle.last_treated_date == date.today()
 
-        # E-bike treatment with battery
-        ebike.status = VehicleStatus.degraded
-        ebike.rides_since_last_treated = 8
-        ebike.battery_level = 25
+        # E-bicycle treatment with battery
+        electric_bicycle.status = VehicleStatus.degraded
+        electric_bicycle.rides_since_last_treated = 8
+        electric_bicycle.battery_level = 25
 
-        ebike.treat()
-        assert ebike.status == VehicleStatus.available
-        assert ebike.rides_since_last_treated == 0
-        assert ebike.battery_level == 100
+        electric_bicycle.treat()
+        assert electric_bicycle.status == VehicleStatus.available
+        assert electric_bicycle.rides_since_last_treated == 0
+        assert electric_bicycle.battery_level == 100
 
     def test_station_capacity_management(self, fleet_system):
         """Test station capacity constraints."""
@@ -238,17 +238,17 @@ class TestCompleteFleetIntegration:
         stations = fleet_system['stations']
         users = fleet_system['users']
         active_rides = fleet_system['active_rides']
-        ebike = fleet_system['ebike']
+        electric_bicycle = fleet_system['electric_bicycle']
         scooter = fleet_system['scooter']
 
-        # Ebike with full battery should rent
-        ebike.battery_level = 100
-        ebike.rent()
-        assert ebike.status == VehicleStatus.rented
+        # electric_bicycle with full battery should rent
+        electric_bicycle.battery_level = 100
+        electric_bicycle.rent()
+        assert electric_bicycle.status == VehicleStatus.rented
 
         # Reset for next test
-        ebike.status = VehicleStatus.available
-        ebike.station_id = 1
+        electric_bicycle.status = VehicleStatus.available
+        electric_bicycle.station_id = 1
 
         # Scooter with low battery shouldn't rent
         scooter.battery_level = 13  # Below 14% threshold
@@ -267,13 +267,13 @@ class TestCompleteFleetIntegration:
         active_rides = fleet_system['active_rides']
         user1 = fleet_system['user1']
         station1 = fleet_system['station1']
-        bike = fleet_system['bike']
+        bicycle = fleet_system['bicycle']
 
         # Create a ride and add to active rides
         ride = Ride(
             ride_id="RIDE001",
             user_id="USER001",
-            vehicle_id="BIKE001"
+            vehicle_id="BICYCLE001"
         )
         active_rides["RIDE001"] = ride
 
@@ -302,7 +302,7 @@ class TestCompleteFleetIntegration:
         normal_ride = Ride(
             ride_id="RIDE_NORMAL",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=False
@@ -313,7 +313,7 @@ class TestCompleteFleetIntegration:
         degraded_ride = Ride(
             ride_id="RIDE_DEGRADED",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=True
@@ -336,7 +336,7 @@ class TestCompleteFleetIntegration:
             lat=32.0,
             lon=34.0,
             max_capacity=20,
-            vehicles=["BIKE001"],
+            vehicles=["BICYCLE001"],
             distance=0.5
         )
         far_station = StationWithDistance(
@@ -345,7 +345,7 @@ class TestCompleteFleetIntegration:
             lat=32.5,
             lon=34.5,
             max_capacity=15,
-            vehicles=["BIKE002"],
+            vehicles=["BICYCLE002"],
             distance=5.0
         )
 
@@ -357,10 +357,10 @@ class TestCompleteFleetIntegration:
         assert far_station.has_available_vehicle() is True
 
         # Can add/remove vehicles
-        nearby_station.add_vehicle("BIKE003")
+        nearby_station.add_vehicle("BICYCLE003")
         assert len(nearby_station.vehicles) == 2
 
-        nearby_station.remove_vehicle("BIKE001")
+        nearby_station.remove_vehicle("BICYCLE001")
         assert len(nearby_station.vehicles) == 1
 
     def test_complete_system_workflow(self, fleet_system):
@@ -371,7 +371,7 @@ class TestCompleteFleetIntegration:
         user = fleet_system['user1']
         station1 = fleet_system['station1']
         station2 = fleet_system['station2']
-        bike = fleet_system['bike']
+        bicycle = fleet_system['bicycle']
 
         # 1. User registers (already done in fixture)
         assert user.user_id in users
@@ -384,31 +384,31 @@ class TestCompleteFleetIntegration:
         # 3. Select vehicle and start ride
         assert user.can_start_ride() is True
 
-        bike.rent()
-        assert bike.status == VehicleStatus.rented
-        station1.remove_vehicle("BIKE001")
+        bicycle.rent()
+        assert bicycle.status == VehicleStatus.rented
+        station1.remove_vehicle("BICYCLE001")
 
         # 4. Ride in progress
-        assert bike.status == VehicleStatus.rented
+        assert bicycle.status == VehicleStatus.rented
 
         # 5. End ride at different station
-        bike.return_vehicle(2)
-        station2.add_vehicle("BIKE001")
+        bicycle.return_vehicle(2)
+        station2.add_vehicle("BICYCLE001")
 
         # 6. Process payment
         ride = Ride(
             ride_id="TRIP001",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             is_degraded_report=False
         )
         process_end_of_ride(user, ride)
 
         # 7. Verify final state
-        assert bike.status == VehicleStatus.available
-        assert bike.station_id == 2
-        assert "BIKE001" in station2.vehicles
-        assert "BIKE001" not in station1.vehicles
+        assert bicycle.status == VehicleStatus.available
+        assert bicycle.station_id == 2
+        assert "BICYCLE001" in station2.vehicles
+        assert "BICYCLE001" not in station1.vehicles
 
 
 class TestErrorHandlingIntegration:
@@ -416,10 +416,10 @@ class TestErrorHandlingIntegration:
 
     def test_invalid_operations_are_caught(self):
         """Test that invalid operations raise appropriate errors."""
-        bike = Bicycle(
-            vehicle_id="BIKE_ERR",
+        bicycle = Bicycle(
+            vehicle_id="bicycle_ERR",
             station_id=1,
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             status=VehicleStatus.degraded,
             rides_since_last_treated=0,
             last_treated_date=date.today()
@@ -427,7 +427,7 @@ class TestErrorHandlingIntegration:
 
         # Can't rent degraded vehicle
         with pytest.raises(Exception):
-            bike.rent()
+            bicycle.rent()
 
         # Station overflow
         station = Station(
@@ -504,7 +504,7 @@ class TestCompleteFleetIntegration:
             lat=32.0,
             lon=34.0,
             max_capacity=20,
-            vehicles=["BIKE001", "EBIKE001", "SCOOTER001"]
+            vehicles=["BICYCLE001", "ELECTRIC_BICYCLE001", "SCOOTER001"]
         )
         station2 = Station(
             station_id=2,
@@ -512,7 +512,7 @@ class TestCompleteFleetIntegration:
             lat=32.1,
             lon=34.1,
             max_capacity=15,
-            vehicles=["BIKE002"]
+            vehicles=["BICYCLE002"]
         )
 
         # Create station dictionary
@@ -544,18 +544,18 @@ class TestCompleteFleetIntegration:
         }
 
         # Create vehicles
-        bike = Bicycle(
-            vehicle_id="BIKE001",
+        bicycle = Bicycle(
+            vehicle_id="BICYCLE001",
             station_id=1,
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             status=VehicleStatus.available,
             rides_since_last_treated=3,
             last_treated_date=date.today()
         )
-        ebike = ElectricBicycle(
-            vehicle_id="EBIKE001",
+        electric_bicycle = ElectricBicycle(
+            vehicle_id="ELECTRIC_BICYCLE001",
             station_id=1,
-            vehicle_type=VehicleType.ebike,
+            vehicle_type=VehicleType.electric_bicycle,
             status=VehicleStatus.available,
             rides_since_last_treated=2,
             last_treated_date=date.today(),
@@ -582,8 +582,8 @@ class TestCompleteFleetIntegration:
             'station2': station2,
             'user1': user1,
             'user2': user2,
-            'bike': bike,
-            'ebike': ebike,
+            'bicycle': bicycle,
+            'electric_bicycle': electric_bicycle,
             'scooter': scooter
         }
 
@@ -593,40 +593,40 @@ class TestCompleteFleetIntegration:
         users = fleet_system['users']
         active_rides = fleet_system['active_rides']
         user = fleet_system['user1']
-        bike = fleet_system['bike']
+        bicycle = fleet_system['bicycle']
         station1 = fleet_system['station1']
         station2 = fleet_system['station2']
 
         # Verify user can start ride (stateless)
         assert user.can_start_ride() is True
 
-        # Rent the bike
-        bike.rent()
-        assert bike.status == "rented"
-        assert bike.station_id is None
+        # Rent the bicycle
+        bicycle.rent()
+        assert bicycle.status == "rented"
+        assert bicycle.station_id is None
 
-        # Remove bike from station
-        station1.remove_vehicle("BIKE001")
-        assert "BIKE001" not in station1.vehicles
+        # Remove bicycle from station
+        station1.remove_vehicle("BICYCLE001")
+        assert "BICYCLE001" not in station1.vehicles
 
         # Create and process ride
         ride = Ride(
             ride_id="RIDE001",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=False
         )
 
         # Return vehicle to different station
-        bike.return_vehicle(2)
-        assert bike.station_id == 2
-        assert bike.status == "available"  # Below threshold
+        bicycle.return_vehicle(2)
+        assert bicycle.station_id == 2
+        assert bicycle.status == "available"  # Below threshold
 
         # Add vehicle to new station
-        station2.add_vehicle("BIKE001")
-        assert "BIKE001" in station2.vehicles
+        station2.add_vehicle("BICYCLE001")
+        assert "BICYCLE001" in station2.vehicles
 
         # Process end of ride and charge user
         process_end_of_ride(user, ride)
@@ -638,24 +638,24 @@ class TestCompleteFleetIntegration:
         active_rides = fleet_system['active_rides']
         user1 = fleet_system['user1']
         user2 = fleet_system['user2']
-        bike = fleet_system['bike']
-        ebike = fleet_system['ebike']
+        bicycle = fleet_system['bicycle']
+        electric_bicycle = fleet_system['electric_bicycle']
         scooter = fleet_system['scooter']
         station1 = fleet_system['station1']
 
-        # User 1 rents bike
-        bike.rent()
-        station1.remove_vehicle("BIKE001")
-        assert bike.status == "rented"
+        # User 1 rents bicycle
+        bicycle.rent()
+        station1.remove_vehicle("BICYCLE001")
+        assert bicycle.status == "rented"
 
-        # User 2 rents ebike
-        ebike.rent()
-        station1.remove_vehicle("EBIKE001")
-        assert ebike.status == "rented"
+        # User 2 rents electric_bicycle
+        electric_bicycle.rent()
+        station1.remove_vehicle("ELECTRIC_BICYCLE001")
+        assert electric_bicycle.status == "rented"
 
         # Both vehicles are rented
-        assert bike.status == "rented"
-        assert ebike.status == "rented"
+        assert bicycle.status == "rented"
+        assert electric_bicycle.status == "rented"
         assert scooter.status == "available"
 
         # Verify station has correct count
@@ -667,29 +667,29 @@ class TestCompleteFleetIntegration:
         users = fleet_system['users']
         active_rides = fleet_system['active_rides']
         station1 = fleet_system['station1']
-        bike = fleet_system['bike']
-        ebike = fleet_system['ebike']
+        bicycle = fleet_system['bicycle']
+        electric_bicycle = fleet_system['electric_bicycle']
 
-        # Bike has 3 rides, artificially bump to above degradation threshold (>10)
-        bike.rides_since_last_treated = 11
-        bike.return_vehicle(1)
-        assert bike.status == "degraded"
+        # bicycle has 3 rides, artificially bump to above degradation threshold (>10)
+        bicycle.rides_since_last_treated = 11
+        bicycle.return_vehicle(1)
+        assert bicycle.status == "degraded"
 
-        # Treat the bike
-        bike.treat()
-        assert bike.status == "available"
-        assert bike.rides_since_last_treated == 0
-        assert bike.last_treated_date == date.today()
+        # Treat the bicycle
+        bicycle.treat()
+        assert bicycle.status == "available"
+        assert bicycle.rides_since_last_treated == 0
+        assert bicycle.last_treated_date == date.today()
 
-        # E-bike treatment with battery
-        ebike.status = "degraded"
-        ebike.rides_since_last_treated = 8
-        ebike.battery_level = 25
+        # E-bicycle treatment with battery
+        electric_bicycle.status = "degraded"
+        electric_bicycle.rides_since_last_treated = 8
+        electric_bicycle.battery_level = 25
 
-        ebike.treat()
-        assert ebike.status == "available"
-        assert ebike.rides_since_last_treated == 0
-        assert ebike.battery_level == 100
+        electric_bicycle.treat()
+        assert electric_bicycle.status == "available"
+        assert electric_bicycle.rides_since_last_treated == 0
+        assert electric_bicycle.battery_level == 100
 
     def test_station_capacity_management(self, fleet_system):
         """Test station capacity constraints."""
@@ -718,17 +718,17 @@ class TestCompleteFleetIntegration:
         stations = fleet_system['stations']
         users = fleet_system['users']
         active_rides = fleet_system['active_rides']
-        ebike = fleet_system['ebike']
+        electric_bicycle = fleet_system['electric_bicycle']
         scooter = fleet_system['scooter']
 
-        # Ebike with full battery should rent
-        ebike.battery_level = 100
-        ebike.rent()
-        assert ebike.status == "rented"
+        # electric_bicycle with full battery should rent
+        electric_bicycle.battery_level = 100
+        electric_bicycle.rent()
+        assert electric_bicycle.status == "rented"
 
         # Reset for next test
-        ebike.status = "available"
-        ebike.station_id = 1
+        electric_bicycle.status = "available"
+        electric_bicycle.station_id = 1
 
         # Scooter with low battery shouldn't rent
         scooter.battery_level = 13  # Below 14% threshold
@@ -747,13 +747,13 @@ class TestCompleteFleetIntegration:
         active_rides = fleet_system['active_rides']
         user1 = fleet_system['user1']
         station1 = fleet_system['station1']
-        bike = fleet_system['bike']
+        bicycle = fleet_system['bicycle']
 
         # Create a ride and add to active rides
         ride = Ride(
             ride_id="RIDE001",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now()
         )
@@ -784,7 +784,7 @@ class TestCompleteFleetIntegration:
         normal_ride = Ride(
             ride_id="RIDE_NORMAL",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=False
@@ -795,7 +795,7 @@ class TestCompleteFleetIntegration:
         degraded_ride = Ride(
             ride_id="RIDE_DEGRADED",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=True
@@ -818,7 +818,7 @@ class TestCompleteFleetIntegration:
             lat=32.0,
             lon=34.0,
             max_capacity=20,
-            vehicles=["BIKE001"],
+            vehicles=["BICYCLE001"],
             distance=0.5
         )
         far_station = StationWithDistance(
@@ -827,7 +827,7 @@ class TestCompleteFleetIntegration:
             lat=32.5,
             lon=34.5,
             max_capacity=15,
-            vehicles=["BIKE002"],
+            vehicles=["BICYCLE002"],
             distance=5.0
         )
 
@@ -839,10 +839,10 @@ class TestCompleteFleetIntegration:
         assert far_station.has_available_vehicle() is True
 
         # Can add/remove vehicles
-        nearby_station.add_vehicle("BIKE003")
+        nearby_station.add_vehicle("BICYCLE003")
         assert len(nearby_station.vehicles) == 2
 
-        nearby_station.remove_vehicle("BIKE001")
+        nearby_station.remove_vehicle("BICYCLE001")
         assert len(nearby_station.vehicles) == 1
 
     def test_complete_system_workflow(self, fleet_system):
@@ -853,7 +853,7 @@ class TestCompleteFleetIntegration:
         user = fleet_system['user1']
         station1 = fleet_system['station1']
         station2 = fleet_system['station2']
-        bike = fleet_system['bike']
+        bicycle = fleet_system['bicycle']
 
         # 1. User registers (already done in fixture)
         assert user.user_id in users
@@ -866,22 +866,22 @@ class TestCompleteFleetIntegration:
         # 3. Select vehicle and start ride
         assert user.can_start_ride() is True
 
-        bike.rent()
-        assert bike.status == "rented"
-        station1.remove_vehicle("BIKE001")
+        bicycle.rent()
+        assert bicycle.status == "rented"
+        station1.remove_vehicle("BICYCLE001")
 
         # 4. Ride in progress
-        assert bike.status == "rented"
+        assert bicycle.status == "rented"
 
         # 5. End ride at different station
-        bike.return_vehicle(2)
-        station2.add_vehicle("BIKE001")
+        bicycle.return_vehicle(2)
+        station2.add_vehicle("BICYCLE001")
 
         # 6. Process payment
         ride = Ride(
             ride_id="TRIP001",
             user_id="USER001",
-            vehicle_id="BIKE001",
+            vehicle_id="BICYCLE001",
             start_station_id=1,
             start_time=datetime.now(),
             is_degraded_report=False
@@ -889,10 +889,10 @@ class TestCompleteFleetIntegration:
         process_end_of_ride(user, ride)
 
         # 7. Verify final state
-        assert bike.status == "available"
-        assert bike.station_id == 2
-        assert "BIKE001" in station2.vehicles
-        assert "BIKE001" not in station1.vehicles
+        assert bicycle.status == "available"
+        assert bicycle.station_id == 2
+        assert "BICYCLE001" in station2.vehicles
+        assert "BICYCLE001" not in station1.vehicles
 
 
 class TestErrorHandlingIntegration:
@@ -900,10 +900,10 @@ class TestErrorHandlingIntegration:
 
     def test_invalid_operations_are_caught(self):
         """Test that invalid operations raise appropriate errors."""
-        bike = Bicycle(
-            vehicle_id="BIKE_ERR",
+        bicycle = Bicycle(
+            vehicle_id="bicycle_ERR",
             station_id=1,
-            vehicle_type=VehicleType.bike,
+            vehicle_type=VehicleType.bicycle,
             status=VehicleStatus.degraded,
             rides_since_last_treated=0,
             last_treated_date=date.today()
@@ -911,7 +911,7 @@ class TestErrorHandlingIntegration:
 
         # Can't rent degraded vehicle
         with pytest.raises(Exception):
-            bike.rent()
+            bicycle.rent()
 
         # Station overflow
         station = Station(

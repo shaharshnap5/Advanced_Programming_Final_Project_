@@ -94,7 +94,7 @@ async def test_get_station_includes_vehicles_array():
                 "lat": 32.0,
                 "lon": 34.0,
                 "max_capacity": 10,
-                "vehicles": ["bike_001", "ebike_002", "scooter_003"]
+                "vehicles": ["bicycle_001", "electric_bicycle_002", "scooter_003"]
             }
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -105,7 +105,7 @@ async def test_get_station_includes_vehicles_array():
             assert "vehicles" in data
             assert isinstance(data["vehicles"], list)
             assert len(data["vehicles"]) == 3
-            assert "bike_001" in data["vehicles"]
+            assert "bicycle_001" in data["vehicles"]
 
 
 @pytest.mark.asyncio
@@ -123,7 +123,7 @@ async def test_get_nearest_station_includes_vehicles_array():
                 "lon": 34.0,
                 "max_capacity": 10,
                 "distance": 0.01,
-                "vehicles": ["ebike_001", "scooter_001"]
+                "vehicles": ["electric_bicycle_001", "scooter_001"]
             }
 
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -134,5 +134,5 @@ async def test_get_nearest_station_includes_vehicles_array():
             assert "vehicles" in data
             assert isinstance(data["vehicles"], list)
             assert len(data["vehicles"]) == 2
-            assert "ebike_001" in data["vehicles"]
+            assert "electric_bicycle_001" in data["vehicles"]
             assert "distance" in data

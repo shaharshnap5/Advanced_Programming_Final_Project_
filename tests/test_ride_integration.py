@@ -220,7 +220,7 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
     service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -228,7 +228,7 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
     ))
     service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=1,
@@ -278,7 +278,7 @@ async def test_ride_end_selects_station_with_capacity(test_db):
     service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=2,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -286,7 +286,7 @@ async def test_ride_end_selects_station_with_capacity(test_db):
     ))
     service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=2,
         status=VehicleStatus.available,
         rides_since_last_treated=1,
@@ -321,9 +321,9 @@ async def test_vehicle_dock_state_transitions(test_db):
     
     # Mock the vehicle before docking (rented state)
     mock_vehicle = Vehicle(
-        vehicle_id="BIKE_001",
+        vehicle_id="bicycle_001",
         station_id=None,  # Currently not at a station (being ridden)
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.rented,
         rides_since_last_treated=5,
         last_treated_date=None,
@@ -331,9 +331,9 @@ async def test_vehicle_dock_state_transitions(test_db):
     
     # Mock the docking operation
     docked_vehicle = Vehicle(
-        vehicle_id="BIKE_001",
+        vehicle_id="bicycle_001",
         station_id=1,  # Now at station 1
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,  # Available for next ride
         rides_since_last_treated=6,  # Incremented
         last_treated_date=None,
@@ -347,7 +347,7 @@ async def test_vehicle_dock_state_transitions(test_db):
     service.rides_repo.get_by_id = AsyncMock(return_value=Ride(
         ride_id="RIDE_001",
         user_id="USER_001",
-        vehicle_id="BIKE_001",
+        vehicle_id="bicycle_001",
         start_station_id=1,
         start_time=datetime.now(),
     ))
@@ -385,7 +385,7 @@ async def test_multiple_concurrent_rides_ending(test_db):
     service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V003",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -393,7 +393,7 @@ async def test_multiple_concurrent_rides_ending(test_db):
     ))
     service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
         vehicle_id="V003",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=1,
@@ -435,7 +435,7 @@ async def test_payment_logic_normal_ride(test_db):
     service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -443,7 +443,7 @@ async def test_payment_logic_normal_ride(test_db):
     ))
     service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=1,
@@ -484,7 +484,7 @@ async def test_nearest_station_calculation(test_db):
     service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
@@ -492,7 +492,7 @@ async def test_nearest_station_calculation(test_db):
     ))
     service.vehicles_repo.dock_vehicle = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
-        vehicle_type=VehicleType.bike,
+        vehicle_type=VehicleType.bicycle,
         station_id=3,
         status=VehicleStatus.available,
         rides_since_last_treated=1,
