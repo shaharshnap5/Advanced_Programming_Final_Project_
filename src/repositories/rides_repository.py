@@ -127,7 +127,7 @@ class RidesRepository:
             SELECT DISTINCT u.user_id, u.first_name, u.last_name, u.email, u.payment_token
             FROM users u
             JOIN rides r ON u.user_id = r.user_id
-            WHERE r.end_time IS NULL OR r.end_station_id IS NULL
+            WHERE r.start_time IS NOT NULL AND r.end_time IS NULL
             """
         )
         rows = await cursor.fetchall()

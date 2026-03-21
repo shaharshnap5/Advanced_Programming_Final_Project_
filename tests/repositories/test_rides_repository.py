@@ -225,6 +225,22 @@ async def test_complete_ride_updates_end_fields(test_db):
 
 
 @pytest.mark.asyncio
+async def test_get_active_users_returns_empty_list_when_no_active_rides(test_db):
+    """No active rides should return an empty list."""
+    repo = RidesRepository()
+
+    await test_db.execute(
+        "INSERT INTO users (user_id, first_name, last_name, email, payment_token) VALUES (?, ?, ?, ?, ?)",
+        ("USER_NO_ACTIVE", "No", "Active", "none@example.com", "tok_none")
+    )
+    await test_db.commit()
+
+    active_users = await repo.get_active_users(test_db)
+
+    assert active_users == []
+
+
+@pytest.mark.asyncio
 async def test_get_active_ride_by_user_returns_ride_object(test_db):
     """Test that get_active_ride_by_user returns a Ride object, not a database row."""
     repo = RidesRepository()

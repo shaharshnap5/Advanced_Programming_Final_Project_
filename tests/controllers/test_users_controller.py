@@ -130,5 +130,3 @@ async def test_create_user_missing_user_id():
     assert response.status_code == 400
     missing_fields = {error["loc"][-1] for error in response.json()["detail"]}
     assert "user_id" in missing_fields
-
-

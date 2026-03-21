@@ -5,11 +5,17 @@ import aiosqlite
 
 from src.models.user import User
 from src.repositories.users_repository import UsersRepository
+from src.repositories.rides_repository import RidesRepository
 
 
 class UsersService:
-    def __init__(self, repository: UsersRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: UsersRepository | None = None,
+        rides_repository: RidesRepository | None = None,
+    ) -> None:
         self._repository = repository or UsersRepository()
+        self._rides_repository = rides_repository or RidesRepository()
 
     async def create_or_login_user(
         self,
