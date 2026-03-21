@@ -15,11 +15,9 @@ service = RideService()
 
 
 @router.get("/active-users", response_model=list[User])
-async def get_active_users() -> list[User]:
+async def get_active_users(db: aiosqlite.Connection = Depends(get_db)) -> list[User]:
     """Return all users who are currently in the middle of a ride."""
-    async with get_db() as db:
-        active_users = await service.list_active_users(db)
-    return active_users
+    return await service.list_active_users(db)
 
 @router.post("/start", response_model=Ride)  # Make sure this matches your return schema
 async def start_ride(
