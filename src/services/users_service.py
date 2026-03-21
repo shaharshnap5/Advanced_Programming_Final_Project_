@@ -17,34 +17,37 @@ class UsersService:
         self._repository = repository or UsersRepository()
         self._rides_repository = rides_repository or RidesRepository()
 
-    async def _generate_unique_user_id(self, db: aiosqlite.Connection) -> str:
-        """Generate a unique server-side user identifier."""
-
-        for _ in range(10):
-            candidate = str(uuid.uuid4())
-            existing = await self._repository.get_by_id(db, candidate)
-            if not existing:
-                return candidate
-
-        raise ValueError("Failed to generate unique user id")
-
-    async def create_user(
+    async def create_or_login_user(
         self,
         db: aiosqlite.Connection,
+        user_id: str,
         first_name: str,
         last_name: str,
         email: str,
-    ) -> User:
-        """Create a new user with a mocked payment token.
+    ) -> tuple[User, bool]:
+        """Register a new user or login existing user with provided user_id.
+
+        If the user with the given user_id already exists, return their data.
+        If the user does not exist, create a new account with a mocked payment token.
+
+        Args:
+            db: Database connection
+            user_id: Unique user identifier provided by the client
+            first_name: User's first name
+            last_name: User's last name
+            email: User's email address
 
         Returns:
-            User: The created user model
-
-        Raises:
-            ValueError: if user id generation fails.
+            tuple[User, bool]: A tuple of (User object, is_existing_user)
+                - User: The created or existing user model with mocked payment token
+                - is_existing_user: True if user already existed, False if newly created
         """
-        user_id = await self._generate_unique_user_id(db)
+        # Check if user already exists
+        existing_user = await self._repository.get_by_id(db, user_id)
+        if existing_user:
+            return existing_user, True
 
+        # User does not exist, create new account
         # Mocked billing token
         token = uuid.uuid4().hex
 
@@ -57,7 +60,7 @@ class UsersService:
             payment_token=token,
         )
         if not created:
-            raise Exception("Failed to create user")
+            raise ValueError(f"Failed to create user with id {user_id}")
 
         return User(
             user_id=user_id,
@@ -65,8 +68,4 @@ class UsersService:
             last_name=last_name,
             email=email,
             payment_token=token,
-        )
-
-    async def list_active_users(self, db: aiosqlite.Connection) -> list[User]:
-        """Return users who currently have an active ride."""
-        return await self._rides_repository.get_active_users(db)
+        ), False

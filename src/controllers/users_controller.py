@@ -1,29 +1,28 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from aiosqlite import Connection
 
 from src.db import get_db
-from src.models.user import UserCreate, User
+from src.models.user import UserCreate, User, UserRegisterResponse
 from src.services.users_service import UsersService
 
 router = APIRouter(prefix="/users", tags=["users"])
 service = UsersService()
 
 
-@router.get("/active", response_model=list[User])
-async def get_active_users(db: Connection = Depends(get_db)) -> list[User]:
-    """Return all users currently in the middle of a ride."""
-    return await service.list_active_users(db)
-
-
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=User)
+@router.post("/register", response_model=UserRegisterResponse)
 async def create_user(
     request: Request,
     db: Connection = Depends(get_db)
-) -> User:
-    """Register a new user and return the generated user_id."""
+) -> JSONResponse:
+    """Register a new user or login existing user with provided user_id.
+
+    If the user does not exist, create a new account with status 201.
+    If the user exists, return the existing user data with status 200.
+    """
     try:
         payload = await request.json()
     except Exception:  # pragma: no cover
@@ -35,8 +34,9 @@ async def create_user(
         raise HTTPException(status_code=400, detail=e.errors())
 
     try:
-        result = await service.create_user(
+        user, is_existing = await service.create_or_login_user(
             db,
+            data.user_id,
             data.first_name,
             data.last_name,
             data.email,
@@ -44,4 +44,14 @@ async def create_user(
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
-    return result
+    response_data = UserRegisterResponse(
+        message="User already exists, details:" if is_existing else "User created successfully",
+        user=user
+    )
+
+    status_code = status.HTTP_200_OK if is_existing else status.HTTP_201_CREATED
+
+    return JSONResponse(
+        status_code=status_code,
+        content=response_data.model_dump()
+    )
