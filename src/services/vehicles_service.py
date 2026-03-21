@@ -7,6 +7,7 @@ from src.repositories.vehicles_repository import VehiclesRepository
 from src.repositories.rides_repository import RidesRepository
 from src.models.vehicle import Vehicle, VehicleStatus
 
+
 class VehiclesService:
     def __init__(
         self,
@@ -16,10 +17,14 @@ class VehiclesService:
         self._repository = repository or VehiclesRepository()
         self._rides_repository = rides_repository or RidesRepository()
 
-    async def get_vehicle_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
+    async def get_vehicle_by_id(
+        self, db: aiosqlite.Connection, vehicle_id: str
+    ) -> Vehicle | None:
         return await self._repository.get_by_id(db, vehicle_id)
 
-    async def report_vehicle_degraded(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle:
+    async def report_vehicle_degraded(
+        self, db: aiosqlite.Connection, vehicle_id: str
+    ) -> Vehicle:
         """Mark vehicle as degraded and auto-complete its active ride (if exists)."""
         vehicle = await self.get_vehicle_by_id(db, vehicle_id)
         if not vehicle:
@@ -28,7 +33,9 @@ class VehiclesService:
         if vehicle.status == VehicleStatus.degraded:
             raise ValueError(f"Vehicle {vehicle_id} is already marked as degraded")
 
-        active_ride = await self._rides_repository.get_active_ride_by_vehicle(db, vehicle_id)
+        active_ride = await self._rides_repository.get_active_ride_by_vehicle(
+            db, vehicle_id
+        )
         if active_ride:
             ride_updated = await self._rides_repository.complete_ride(
                 db,
@@ -38,15 +45,21 @@ class VehiclesService:
                 is_degraded_report=True,
             )
             if not ride_updated:
-                raise Exception(f"Failed to auto-complete active ride for vehicle {vehicle_id}")
+                raise Exception(
+                    f"Failed to auto-complete active ride for vehicle {vehicle_id}"
+                )
 
-        success = await self._repository.mark_vehicle_degraded_and_detach(db, vehicle_id)
+        success = await self._repository.mark_vehicle_degraded_and_detach(
+            db, vehicle_id
+        )
         if not success:
             raise Exception(f"Failed to report vehicle {vehicle_id} as degraded")
 
         return await self.get_vehicle_by_id(db, vehicle_id)
 
-    async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> Vehicle:
+    async def treat_vehicle(
+        self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None
+    ) -> Vehicle:
         """Perform maintenance on a vehicle.
         Requirements:
         - Vehicle must be degraded OR have >= 7 rides since last treatment
@@ -80,7 +93,9 @@ class VehiclesService:
         treatment_station = station_id if station_id else vehicle.station_id
 
         # Perform treatment
-        success = await self._repository.treat_vehicle(db, vehicle_id, treatment_station)
+        success = await self._repository.treat_vehicle(
+            db, vehicle_id, treatment_station
+        )
         if not success:
             raise Exception(f"Failed to treat vehicle {vehicle_id}")
 

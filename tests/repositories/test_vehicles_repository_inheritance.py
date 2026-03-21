@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from src.models.vehicle import Bicycle, ElectricBicycle, Scooter, VehicleStatus, VehicleType
+from src.models.vehicle import (
+    Scooter,
+    VehicleStatus,
+    VehicleType,
+)
 from src.repositories.vehicles_repository import VehiclesRepository
 
 
@@ -48,7 +52,9 @@ async def test_dock_vehicle_updates_scooter_battery_in_child_table(test_db):
     assert isinstance(updated, Scooter)
     assert updated.battery == 86
 
-    cursor = await test_db.execute("SELECT battery FROM scooters WHERE vehicle_id = 'V002'")
+    cursor = await test_db.execute(
+        "SELECT battery FROM scooters WHERE vehicle_id = 'V002'"
+    )
     row = await cursor.fetchone()
     await cursor.close()
     assert row[0] == 86
@@ -72,4 +78,3 @@ async def test_treat_vehicle_recharges_ev_in_child_table(test_db):
     assert treated.status == VehicleStatus.available
     assert treated.rides_since_last_treated == 0
     assert treated.battery == 100
-

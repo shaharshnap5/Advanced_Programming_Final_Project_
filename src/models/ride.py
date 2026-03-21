@@ -4,7 +4,6 @@ from pydantic import BaseModel
 from .user import User
 
 
-
 class Ride(BaseModel):
     ride_id: str
     user_id: str
@@ -24,6 +23,7 @@ class Ride(BaseModel):
 
 # --- Inside API endpoint for ending a ride ---
 
+
 def process_end_of_ride(user: User, ride: Ride):
     """Processes the end of a ride by calculating the cost and charging the user."""
 
@@ -32,6 +32,3 @@ def process_end_of_ride(user: User, ride: Ride):
 
     # 2. The User is charged that exact amount
     user.charge(final_price)
-
-
-

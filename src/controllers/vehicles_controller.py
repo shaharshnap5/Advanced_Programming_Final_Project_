@@ -12,8 +12,9 @@ service = VehiclesService()
 
 
 @router.get("/{vehicle_id}", response_model=Vehicle)
-async def get_vehicle(vehicle_id: str,
-                      db: aiosqlite.Connection = Depends(get_db)) -> Vehicle:
+async def get_vehicle(
+    vehicle_id: str, db: aiosqlite.Connection = Depends(get_db)
+) -> Vehicle:
     vehicle = await service.get_vehicle_by_id(db, vehicle_id)
 
     if not vehicle:
@@ -25,8 +26,11 @@ async def get_vehicle(vehicle_id: str,
 @router.post("/{vehicle_id}/treat", response_model=Vehicle)
 async def treat_vehicle(
     vehicle_id: str,
-    station_id: int | None = Query(None, description="Station to assign (required for degraded vehicles without station)"),
-    db: aiosqlite.Connection = Depends(get_db)
+    station_id: int | None = Query(
+        None,
+        description="Station to assign (required for degraded vehicles without station)",
+    ),
+    db: aiosqlite.Connection = Depends(get_db),
 ) -> Vehicle:
     """Perform maintenance on a vehicle.
     Requirements:
@@ -44,9 +48,9 @@ async def treat_vehicle(
 
 
 @router.post("/{vehicle_id}/report-degraded", response_model=Vehicle)
-async def report_degraded(vehicle_id: str,
-                            db: aiosqlite.Connection = Depends(get_db)
-                          ) -> Vehicle:
+async def report_degraded(
+    vehicle_id: str, db: aiosqlite.Connection = Depends(get_db)
+) -> Vehicle:
     """Endpoint for users to report a vehicle as degraded. Marks it degraded regardless of ride count."""
     try:
         updated = await service.report_vehicle_degraded(db, vehicle_id)

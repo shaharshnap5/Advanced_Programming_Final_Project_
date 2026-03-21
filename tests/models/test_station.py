@@ -10,7 +10,6 @@ Tests cover:
 """
 
 import pytest
-from unittest.mock import Mock
 
 from src.models.station import Station, StationWithDistance
 
@@ -27,7 +26,7 @@ class TestStation:
             lat=32.0,
             lon=34.0,
             max_capacity=10,
-            vehicles=[]
+            vehicles=[],
         )
 
     @pytest.fixture
@@ -40,7 +39,7 @@ class TestStation:
             lat=32.1,
             lon=34.1,
             max_capacity=10,
-            vehicles=vehicles
+            vehicles=vehicles,
         )
 
     @pytest.fixture
@@ -52,7 +51,7 @@ class TestStation:
             lat=32.2,
             lon=34.2,
             max_capacity=20,
-            vehicles=["VEHICLE_001", "VEHICLE_002", "VEHICLE_003"]
+            vehicles=["VEHICLE_001", "VEHICLE_002", "VEHICLE_003"],
         )
 
     def test_station_initialization(self, empty_station):
@@ -72,11 +71,7 @@ class TestStation:
     def test_station_default_vehicles_empty_list(self):
         """Test that vehicles defaults to an empty list."""
         station = Station(
-            station_id=4,
-            name="Test Station",
-            lat=32.3,
-            lon=34.3,
-            max_capacity=5
+            station_id=4, name="Test Station", lat=32.3, lon=34.3, max_capacity=5
         )
         assert station.vehicles == []
         assert isinstance(station.vehicles, list)
@@ -97,7 +92,7 @@ class TestStation:
             lat=32.4,
             lon=34.4,
             max_capacity=5,
-            vehicles=["VEHICLE_001"]
+            vehicles=["VEHICLE_001"],
         )
         assert station.has_available_vehicle() is True
 
@@ -121,7 +116,7 @@ class TestStation:
             lat=32.5,
             lon=34.5,
             max_capacity=5,
-            vehicles=["V1", "V2", "V3", "V4", "V5"]
+            vehicles=["V1", "V2", "V3", "V4", "V5"],
         )
         assert station.has_free_spot() is False
 
@@ -162,7 +157,7 @@ class TestStation:
             lat=32.6,
             lon=34.6,
             max_capacity=5,
-            vehicles=["V1", "V2", "V3", "V4"]
+            vehicles=["V1", "V2", "V3", "V4"],
         )
 
         station.add_vehicle("V5")
@@ -221,7 +216,7 @@ class TestStation:
             Station(
                 station_id=8,
                 name="Incomplete Station",
-                lat=32.7
+                lat=32.7,
                 # Missing lon and max_capacity
             )
 
@@ -240,7 +235,7 @@ class TestStation:
             name="Precision Test",
             lat=32.123456789,
             lon=34.987654321,
-            max_capacity=10
+            max_capacity=10,
         )
 
         assert station.lat == 32.123456789
@@ -261,7 +256,7 @@ class TestStation:
             name="None Vehicles Station",
             lat=32.8,
             lon=34.8,
-            max_capacity=10
+            max_capacity=10,
         )
         # Manually set to None to test the guard clause
         station.vehicles = None
@@ -286,7 +281,7 @@ class TestStationWithDistance:
             lon=34.0,
             max_capacity=10,
             vehicles=["VEHICLE_001", "VEHICLE_002"],
-            distance=0.5
+            distance=0.5,
         )
 
     def test_station_with_distance_initialization(self, station_with_distance):
@@ -333,7 +328,7 @@ class TestStationWithDistance:
             lat=32.1,
             lon=34.1,
             max_capacity=5,
-            distance=0.0
+            distance=0.0,
         )
 
         assert station.distance == 0.0
@@ -346,7 +341,7 @@ class TestStationWithDistance:
             lat=32.2,
             lon=34.2,
             max_capacity=5,
-            distance=50.5
+            distance=50.5,
         )
 
         assert station.distance == 50.5
@@ -359,7 +354,7 @@ class TestStationWithDistance:
             lat=32.3,
             lon=34.3,
             max_capacity=5,
-            distance=1.5
+            distance=1.5,
         )
         station2 = StationWithDistance(
             station_id=5,
@@ -367,7 +362,7 @@ class TestStationWithDistance:
             lat=32.4,
             lon=34.4,
             max_capacity=5,
-            distance=3.0
+            distance=3.0,
         )
 
         assert station1.distance < station2.distance
@@ -379,4 +374,3 @@ class TestStationWithDistance:
         assert "distance" in station_dict
         assert "station_id" in station_dict
         assert "name" in station_dict
-

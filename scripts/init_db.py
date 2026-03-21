@@ -8,33 +8,32 @@ from pathlib import Path
 import pandas as pd
 import aiosqlite
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from db.schema import CREATE_SQL
-from src.models.vehicle import VehicleType
 STATIONS_CSV = PROJECT_ROOT / "data" / "stations.csv"
 VEHICLES_CSV = PROJECT_ROOT / "data" / "vehicles.csv"
 USERS_CSV = PROJECT_ROOT / "data" / "users.csv"
 RIDES_CSV = PROJECT_ROOT / "data" / "rides.csv"
 DB_PATH = PROJECT_ROOT / "data" / "app.db"
 
+
 async def init_db(reset_db: bool = False) -> None:
+    from db.schema import CREATE_SQL
+    from src.models.vehicle import VehicleType
+
     # 2. Connect directly to the database file instead of using get_db()
     async with aiosqlite.connect(DB_PATH) as db:
         if reset_db:
             print("Resetting and creating tables...")
-            await db.executescript(
-                """
+            await db.executescript("""
                 DROP TABLE IF EXISTS rides;
                 DROP TABLE IF EXISTS electric_bicycles;
                 DROP TABLE IF EXISTS scooters;
                 DROP TABLE IF EXISTS users;
                 DROP TABLE IF EXISTS vehicles;
                 DROP TABLE IF EXISTS stations;
-                """
-            )
+                """)
         else:
             print("Creating tables (without reset)...")
         await db.executescript(CREATE_SQL)
@@ -53,25 +52,36 @@ async def init_db(reset_db: bool = False) -> None:
 
         if "battery" not in vehicles.columns:
             vehicles["battery"] = vehicles["vehicle_type"].apply(
-                lambda vehicle_type: 100 if vehicle_type in {VehicleType.electric_bicycle.value, VehicleType.scooter.value} else None
+                lambda vehicle_type: (
+                    100
+                    if vehicle_type
+                    in {VehicleType.electric_bicycle.value, VehicleType.scooter.value}
+                    else None
+                )
             )
 
         await db.executemany(
             """INSERT OR IGNORE INTO vehicles(
                    vehicle_id, station_id, vehicle_type, status, rides_since_last_treated, last_treated_date
                ) VALUES(?,?,?,?,?,?)""",
-            vehicles[[
-                "vehicle_id",
-                "station_id",
-                "vehicle_type",
-                "status",
-                "rides_since_last_treated",
-                "last_treated_date",
-            ]].itertuples(index=False, name=None),
+            vehicles[
+                [
+                    "vehicle_id",
+                    "station_id",
+                    "vehicle_type",
+                    "status",
+                    "rides_since_last_treated",
+                    "last_treated_date",
+                ]
+            ].itertuples(index=False, name=None),
         )
 
-        electric_bicycles = vehicles[vehicles["vehicle_type"] == VehicleType.electric_bicycle.value][['vehicle_id', 'battery']]
-        scooters = vehicles[vehicles["vehicle_type"] == VehicleType.scooter.value][['vehicle_id', 'battery']]
+        electric_bicycles = vehicles[
+            vehicles["vehicle_type"] == VehicleType.electric_bicycle.value
+        ][["vehicle_id", "battery"]]
+        scooters = vehicles[vehicles["vehicle_type"] == VehicleType.scooter.value][
+            ["vehicle_id", "battery"]
+        ]
 
         await db.executemany(
             "INSERT OR IGNORE INTO electric_bicycles(vehicle_id, battery) VALUES(?, ?)",
@@ -87,9 +97,9 @@ async def init_db(reset_db: bool = False) -> None:
             """INSERT OR IGNORE INTO users(
                    user_id, first_name, last_name, email, payment_token
                ) VALUES(?,?,?,?,?)""",
-            users[["user_id", "first_name", "last_name", "email", "payment_token"]].itertuples(
-                index=False, name=None
-            ),
+            users[
+                ["user_id", "first_name", "last_name", "email", "payment_token"]
+            ].itertuples(index=False, name=None),
         )
 
         print("Loading rides...")
@@ -98,16 +108,18 @@ async def init_db(reset_db: bool = False) -> None:
             """INSERT OR IGNORE INTO rides(
                    ride_id, user_id, vehicle_id, start_station_id, end_station_id, is_degraded_report, start_time, end_time
                ) VALUES(?,?,?,?,?,?,?,?)""",
-            rides[[
-                "ride_id",
-                "user_id",
-                "vehicle_id",
-                "start_station_id",
-                "end_station_id",
-                "is_degraded_report",
-                "start_time",
-                "end_time",
-            ]].itertuples(index=False, name=None),
+            rides[
+                [
+                    "ride_id",
+                    "user_id",
+                    "vehicle_id",
+                    "start_station_id",
+                    "end_station_id",
+                    "is_degraded_report",
+                    "start_time",
+                    "end_time",
+                ]
+            ].itertuples(index=False, name=None),
         )
         # -------------------------------------
 
@@ -116,7 +128,9 @@ async def init_db(reset_db: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Initialize and seed the SQLite database.")
+    parser = argparse.ArgumentParser(
+        description="Initialize and seed the SQLite database."
+    )
     parser.add_argument(
         "--reset-db",
         action="store_true",

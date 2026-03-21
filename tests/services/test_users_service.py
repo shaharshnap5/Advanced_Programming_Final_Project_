@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-import uuid
 from unittest.mock import AsyncMock, Mock, patch
 
 from src.models.user import User

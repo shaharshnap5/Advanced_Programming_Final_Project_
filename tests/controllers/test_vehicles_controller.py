@@ -14,20 +14,24 @@ async def test_get_vehicle_success():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.get_vehicle_by_id") as mock_get:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.get_vehicle_by_id"
+        ) as mock_get:
             mock_get.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
                 "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 5,
-                "last_treated_date": date(2025, 1, 1)
+                "last_treated_date": date(2025, 1, 1),
             }
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.get("/vehicles/V001")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["vehicle_id"] == "V001"
@@ -39,20 +43,26 @@ async def test_get_vehicle_not_found():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.get_vehicle_by_id") as mock_get:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.get_vehicle_by_id"
+        ) as mock_get:
             mock_get.return_value = None
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.get("/vehicles/V999")
-            
+
             assert response.status_code == 404
             assert response.json()["detail"] == "Vehicle not found"
 
 
 @pytest.mark.asyncio
 async def test_list_vehicles_endpoint_removed():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         response = await client.get("/vehicles")
 
     assert response.status_code == 404
@@ -61,7 +71,9 @@ async def test_list_vehicles_endpoint_removed():
 
 @pytest.mark.asyncio
 async def test_list_vehicles_by_station_endpoint_removed():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         response = await client.get("/vehicles?station_id=1")
 
     assert response.status_code == 404
@@ -70,7 +82,9 @@ async def test_list_vehicles_by_station_endpoint_removed():
 
 @pytest.mark.asyncio
 async def test_list_vehicles_eligible_for_treatment_endpoint_removed():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         response = await client.get("/vehicles/treatment/eligible")
 
     assert response.status_code == 404
@@ -83,20 +97,24 @@ async def test_treat_vehicle_success():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.treat_vehicle"
+        ) as mock_treat:
             mock_treat.return_value = {
                 "vehicle_id": "V001",
                 "station_id": 1,
                 "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
-                "last_treated_date": date.today()
+                "last_treated_date": date.today(),
             }
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post("/vehicles/V001/treat")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "available"
@@ -109,20 +127,24 @@ async def test_treat_vehicle_with_station():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.treat_vehicle"
+        ) as mock_treat:
             mock_treat.return_value = {
                 "vehicle_id": "V004",
                 "station_id": 3,
                 "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
-                "last_treated_date": date.today()
+                "last_treated_date": date.today(),
             }
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post("/vehicles/V004/treat?station_id=3")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["station_id"] == 3
@@ -135,13 +157,19 @@ async def test_treat_vehicle_not_eligible():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
-            mock_treat.side_effect = ValueError("Vehicle V003 is not eligible for treatment")
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.treat_vehicle"
+        ) as mock_treat:
+            mock_treat.side_effect = ValueError(
+                "Vehicle V003 is not eligible for treatment"
+            )
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post("/vehicles/V003/treat")
-            
+
             assert response.status_code == 400
 
 
@@ -151,20 +179,24 @@ async def test_report_degraded_success():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.report_vehicle_degraded") as mock_report:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.report_vehicle_degraded"
+        ) as mock_report:
             mock_report.return_value = {
                 "vehicle_id": "V010",
                 "station_id": 1,
                 "vehicle_type": VehicleType.bicycle,
                 "status": VehicleStatus.degraded,
                 "rides_since_last_treated": 3,
-                "last_treated_date": date(2025, 1, 1)
+                "last_treated_date": date(2025, 1, 1),
             }
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post("/vehicles/V010/report-degraded")
-            
+
             assert response.status_code == 200
             assert response.json()["status"] == "degraded"
 
@@ -175,13 +207,17 @@ async def test_report_degraded_not_found():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.report_vehicle_degraded") as mock_report:
+
+        with patch(
+            "src.controllers.vehicles_controller.service.report_vehicle_degraded"
+        ) as mock_report:
             mock_report.side_effect = ValueError("Vehicle V999 not found")
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post("/vehicles/V999/report-degraded")
-            
+
             assert response.status_code == 404
 
 
@@ -192,10 +228,16 @@ async def test_report_degraded_already_degraded():
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
-        with patch("src.controllers.vehicles_controller.service.report_vehicle_degraded") as mock_report:
-            mock_report.side_effect = ValueError("Vehicle V010 is already marked as degraded")
+        with patch(
+            "src.controllers.vehicles_controller.service.report_vehicle_degraded"
+        ) as mock_report:
+            mock_report.side_effect = ValueError(
+                "Vehicle V010 is already marked as degraded"
+            )
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post("/vehicles/V010/report-degraded")
 
             assert response.status_code == 409
@@ -208,12 +250,15 @@ async def test_treat_vehicle_needs_station():
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
-        with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
-            mock_treat.side_effect = ValueError("Must provide a station_id")
-            
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-                response = await client.post("/vehicles/V004/treat")
-            
-            assert response.status_code == 400
 
+        with patch(
+            "src.controllers.vehicles_controller.service.treat_vehicle"
+        ) as mock_treat:
+            mock_treat.side_effect = ValueError("Must provide a station_id")
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.post("/vehicles/V004/treat")
+
+            assert response.status_code == 400

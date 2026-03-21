@@ -5,56 +5,60 @@ Tests verify that all vehicle classes use Vehicle_status and Vehicle_type enums 
 
 from __future__ import annotations
 
-import pytest
 import datetime
 from src.models.vehicle import (
-    Vehicle, VehicleType, VehicleStatus,
-    Bicycle, ElectricVehicle, ElectricBicycle, Scooter,
-    VehicleFactory
+    VehicleType,
+    VehicleStatus,
+    Bicycle,
+    ElectricBicycle,
+    Scooter,
+    VehicleFactory,
 )
-
 
 # ============================================================================
 # Tests for Vehicle_type Enum
 # ============================================================================
 
+
 def test_vehicle_type_enum_values():
     """Test Vehicle_type enum has correct values."""
-    assert VehicleType.bicycle.value == 'bicycle'
-    assert VehicleType.electric_bicycle.value == 'electric_bicycle'
-    assert VehicleType.scooter.value == 'scooter'
+    assert VehicleType.bicycle.value == "bicycle"
+    assert VehicleType.electric_bicycle.value == "electric_bicycle"
+    assert VehicleType.scooter.value == "scooter"
 
 
 def test_vehicle_type_enum_members():
     """Test Vehicle_type enum has all required members."""
     members = [e.name for e in VehicleType]
-    assert 'bicycle' in members
-    assert 'electric_bicycle' in members
-    assert 'scooter' in members
+    assert "bicycle" in members
+    assert "electric_bicycle" in members
+    assert "scooter" in members
 
 
 # ============================================================================
 # Tests for Vehicle_status Enum
 # ============================================================================
 
+
 def test_vehicle_status_enum_values():
     """Test Vehicle_status enum has correct values."""
-    assert VehicleStatus.available.value == 'available'
-    assert VehicleStatus.rented.value == 'rented'
-    assert VehicleStatus.degraded.value == 'degraded'
+    assert VehicleStatus.available.value == "available"
+    assert VehicleStatus.rented.value == "rented"
+    assert VehicleStatus.degraded.value == "degraded"
 
 
 def test_vehicle_status_enum_members():
     """Test Vehicle_status enum has all required members."""
     members = [e.name for e in VehicleStatus]
-    assert 'available' in members
-    assert 'rented' in members
-    assert 'degraded' in members
+    assert "available" in members
+    assert "rented" in members
+    assert "degraded" in members
 
 
 # ============================================================================
 # Tests for Bicycle with Enum
 # ============================================================================
+
 
 def test_bicycle_creation_with_enum():
     """Test creating a bicycle with enum types."""
@@ -64,7 +68,7 @@ def test_bicycle_creation_with_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     assert bicycle.vehicle_id == "bicycle_001"
@@ -81,7 +85,7 @@ def test_bicycle_default_vehicle_type():
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     assert bicycle.vehicle_type == VehicleType.bicycle
@@ -95,7 +99,7 @@ def test_bicycle_rent_sets_status_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     bicycle.rent()
@@ -113,7 +117,7 @@ def test_bicycle_treat_sets_status_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.degraded,
         rides_since_last_treated=15,
-        last_treated_date=datetime.date(2024, 1, 1)
+        last_treated_date=datetime.date(2024, 1, 1),
     )
 
     bicycle.treat()
@@ -132,7 +136,7 @@ def test_bicycle_return_vehicle_sets_status_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.rented,
         rides_since_last_treated=5,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     bicycle.return_vehicle(station_id=2)
@@ -146,6 +150,7 @@ def test_bicycle_return_vehicle_sets_status_enum():
 # Tests for ElectricBicycle with Enum
 # ============================================================================
 
+
 def test_electric_bicycle_creation_with_enum():
     """Test creating an electric bicycle with enum types."""
     electric_bicycle = ElectricBicycle(
@@ -155,7 +160,7 @@ def test_electric_bicycle_creation_with_enum():
         status=VehicleStatus.available,
         rides_since_last_treated=0,
         last_treated_date=None,
-        battery_level=100
+        battery_level=100,
     )
 
     assert electric_bicycle.vehicle_id == "electric_bicycle_001"
@@ -173,7 +178,7 @@ def test_electric_bicycle_default_vehicle_type():
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     assert electric_bicycle.vehicle_type == VehicleType.electric_bicycle
@@ -186,7 +191,7 @@ def test_electric_bicycle_default_battery_level():
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     assert electric_bicycle.battery_level == 100
@@ -201,7 +206,7 @@ def test_electric_bicycle_rent_sets_status_enum():
         status=VehicleStatus.available,
         rides_since_last_treated=0,
         last_treated_date=None,
-        battery_level=50
+        battery_level=50,
     )
 
     electric_bicycle.rent()
@@ -219,7 +224,7 @@ def test_electric_bicycle_treat_sets_status_enum():
         status=VehicleStatus.degraded,
         rides_since_last_treated=15,
         last_treated_date=datetime.date(2024, 1, 1),
-        battery_level=10
+        battery_level=10,
     )
 
     electric_bicycle.treat()
@@ -234,6 +239,7 @@ def test_electric_bicycle_treat_sets_status_enum():
 # Tests for Scooter with Enum
 # ============================================================================
 
+
 def test_scooter_creation_with_enum():
     """Test creating a scooter with enum types."""
     scooter = Scooter(
@@ -243,7 +249,7 @@ def test_scooter_creation_with_enum():
         status=VehicleStatus.available,
         rides_since_last_treated=0,
         last_treated_date=None,
-        battery_level=100
+        battery_level=100,
     )
 
     assert scooter.vehicle_id == "scooter_001"
@@ -260,7 +266,7 @@ def test_scooter_default_vehicle_type():
         station_id=1,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     assert scooter.vehicle_type == VehicleType.scooter
@@ -275,7 +281,7 @@ def test_scooter_rent_sets_status_enum():
         status=VehicleStatus.available,
         rides_since_last_treated=0,
         last_treated_date=None,
-        battery_level=50
+        battery_level=50,
     )
 
     scooter.rent()
@@ -287,6 +293,7 @@ def test_scooter_rent_sets_status_enum():
 # ============================================================================
 # Tests for VehicleFactory with Enum
 # ============================================================================
+
 
 def test_vehicle_factory_creates_bicycle_with_enum():
     """Test that factory creates bicycle with correct enum types."""
@@ -301,7 +308,9 @@ def test_vehicle_factory_creates_bicycle_with_enum():
 
 def test_vehicle_factory_creates_electric_bicycle_with_enum():
     """Test that factory creates electric bicycle with correct enum types."""
-    electric_bicycle = VehicleFactory.create_vehicle("electric_bicycle_001", "electric_bicycle", station_id=1)
+    electric_bicycle = VehicleFactory.create_vehicle(
+        "electric_bicycle_001", "electric_bicycle", station_id=1
+    )
 
     assert isinstance(electric_bicycle, ElectricBicycle)
     assert electric_bicycle.vehicle_type == VehicleType.electric_bicycle
@@ -327,7 +336,12 @@ def test_vehicle_factory_case_insensitive():
     bicycle2 = VehicleFactory.create_vehicle("bicycle_002", "BICYCLE")
     bicycle3 = VehicleFactory.create_vehicle("bicycle_003", "Bicycle")
 
-    assert bicycle1.vehicle_type == bicycle2.vehicle_type == bicycle3.vehicle_type == VehicleType.bicycle
+    assert (
+        bicycle1.vehicle_type
+        == bicycle2.vehicle_type
+        == bicycle3.vehicle_type
+        == VehicleType.bicycle
+    )
     assert isinstance(bicycle1.vehicle_type, VehicleType)
 
 
@@ -344,6 +358,7 @@ def test_vehicle_factory_without_station_id():
 # Tests for Enum Comparisons
 # ============================================================================
 
+
 def test_vehicle_status_enum_comparison():
     """Test comparing vehicle status with enum."""
     bicycle = Bicycle(
@@ -352,7 +367,7 @@ def test_vehicle_status_enum_comparison():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     # Should be able to compare directly with enum
@@ -369,7 +384,7 @@ def test_vehicle_type_enum_comparison():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     # Should be able to compare directly with enum
@@ -382,6 +397,7 @@ def test_vehicle_type_enum_comparison():
 # Tests for Enum in Return Vehicle
 # ============================================================================
 
+
 def test_return_vehicle_degradation_uses_enum():
     """Test that return_vehicle correctly uses status enum."""
     bicycle = Bicycle(
@@ -390,7 +406,7 @@ def test_return_vehicle_degradation_uses_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.rented,
         rides_since_last_treated=15,  # More than 10
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     bicycle.return_vehicle(station_id=1)
@@ -409,7 +425,7 @@ def test_return_vehicle_no_degradation_uses_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.rented,
         rides_since_last_treated=5,  # Less than or equal to 10
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     bicycle.return_vehicle(station_id=1)
@@ -424,6 +440,7 @@ def test_return_vehicle_no_degradation_uses_enum():
 # Tests for Report Degraded with Enum
 # ============================================================================
 
+
 def test_report_degraded_uses_enum():
     """Test that report_degraded sets status to degraded enum."""
     bicycle = Bicycle(
@@ -432,11 +449,10 @@ def test_report_degraded_uses_enum():
         vehicle_type=VehicleType.bicycle,
         status=VehicleStatus.available,
         rides_since_last_treated=0,
-        last_treated_date=None
+        last_treated_date=None,
     )
 
     bicycle.report_degraded()
 
     assert bicycle.status == VehicleStatus.degraded
     assert isinstance(bicycle.status, VehicleStatus)
-

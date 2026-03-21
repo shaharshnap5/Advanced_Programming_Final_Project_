@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from aiosqlite import Connection
 
 from src.db import get_db
-from src.models.user import UserCreate, User, UserRegisterResponse
+from src.models.user import UserCreate, UserRegisterResponse
 from src.services.users_service import UsersService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -15,8 +15,7 @@ service = UsersService()
 
 @router.post("/register", response_model=UserRegisterResponse)
 async def create_user(
-    request: Request,
-    db: Connection = Depends(get_db)
+    request: Request, db: Connection = Depends(get_db)
 ) -> JSONResponse:
     """Register a new user or login existing user with provided user_id.
 
@@ -45,13 +44,14 @@ async def create_user(
         raise HTTPException(status_code=409, detail=str(err))
 
     response_data = UserRegisterResponse(
-        message="User already exists, details:" if is_existing else "User created successfully",
-        user=user
+        message=(
+            "User already exists, details:"
+            if is_existing
+            else "User created successfully"
+        ),
+        user=user,
     )
 
     status_code = status.HTTP_200_OK if is_existing else status.HTTP_201_CREATED
 
-    return JSONResponse(
-        status_code=status_code,
-        content=response_data.model_dump()
-    )
+    return JSONResponse(status_code=status_code, content=response_data.model_dump())

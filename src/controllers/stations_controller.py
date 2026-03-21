@@ -16,7 +16,7 @@ service = StationsService()
 async def get_nearest_station(
     lon: float = Query(..., description="Longitude"),
     lat: float = Query(..., description="Latitude"),
-    db: aiosqlite.Connection = Depends(get_db)
+    db: aiosqlite.Connection = Depends(get_db),
 ) -> StationWithDistance:
     station = await service.get_nearest_station(db, lon=lon, lat=lat)
 
@@ -27,8 +27,9 @@ async def get_nearest_station(
 
 
 @router.get("/{station_id}", response_model=Station)
-async def get_station(station_id: int,
-                      db: aiosqlite.Connection = Depends(get_db)) -> Station:
+async def get_station(
+    station_id: int, db: aiosqlite.Connection = Depends(get_db)
+) -> Station:
 
     station = await service.get_station_by_id(db, station_id)
 

@@ -15,7 +15,9 @@ async def test_create_user_success():
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
-        with patch("src.controllers.users_controller.service.create_or_login_user") as mock_create_or_login:
+        with patch(
+            "src.controllers.users_controller.service.create_or_login_user"
+        ) as mock_create_or_login:
             user = User(
                 user_id="user123",
                 first_name="Test",
@@ -25,7 +27,9 @@ async def test_create_user_success():
             )
             mock_create_or_login.return_value = (user, False)  # New user
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post(
                     "/users/register",
                     json={
@@ -51,7 +55,9 @@ async def test_login_existing_user():
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
-        with patch("src.controllers.users_controller.service.create_or_login_user") as mock_create_or_login:
+        with patch(
+            "src.controllers.users_controller.service.create_or_login_user"
+        ) as mock_create_or_login:
             user = User(
                 user_id="user123",
                 first_name="Test",
@@ -61,7 +67,9 @@ async def test_login_existing_user():
             )
             mock_create_or_login.return_value = (user, True)  # Existing user
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post(
                     "/users/register",
                     json={
@@ -85,10 +93,16 @@ async def test_create_user_conflict():
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
 
-        with patch("src.controllers.users_controller.service.create_or_login_user") as mock_create_or_login:
-            mock_create_or_login.side_effect = ValueError("Failed to create user with id user123")
+        with patch(
+            "src.controllers.users_controller.service.create_or_login_user"
+        ) as mock_create_or_login:
+            mock_create_or_login.side_effect = ValueError(
+                "Failed to create user with id user123"
+            )
 
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
                 response = await client.post(
                     "/users/register",
                     json={
@@ -106,7 +120,9 @@ async def test_create_user_conflict():
 @pytest.mark.asyncio
 async def test_create_user_invalid_payload():
     """Test validation of required fields."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         response = await client.post("/users/register", json={})
 
     assert response.status_code == 400
@@ -117,7 +133,9 @@ async def test_create_user_invalid_payload():
 @pytest.mark.asyncio
 async def test_create_user_missing_user_id():
     """Test validation when user_id is missing."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         response = await client.post(
             "/users/register",
             json={

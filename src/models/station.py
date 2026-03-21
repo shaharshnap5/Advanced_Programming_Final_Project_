@@ -4,28 +4,25 @@ from pydantic import BaseModel, Field
 from src.models.vehicle import Vehicle
 
 
-
-
 class Station(BaseModel):
     station_id: int
     name: str
     lat: float
     lon: float
     max_capacity: int
-    vehicles: list[str]  = Field(default_factory=list) # List of vehicle IDs currently at the station
-
+    vehicles: list[str] = Field(
+        default_factory=list
+    )  # List of vehicle IDs currently at the station
 
     def has_available_vehicle(self):
         """Checks if there is at least one vehicle available at the station."""
 
         return self.vehicles is not None and len(self.vehicles) > 0
 
-
     def has_free_spot(self):
         """Checks if there is at least one free spot available at the station."""
 
         return self.vehicles is None or len(self.vehicles) < self.max_capacity
-
 
     def add_vehicle(self, vehicle_id: str):
         """Adds a vehicle to the station if there is capacity."""
@@ -37,7 +34,6 @@ class Station(BaseModel):
         else:
             raise Exception("Station is at full capacity")
 
-
     def remove_vehicle(self, vehicle_id: str):
         """Removes a vehicle from the station if it exists."""
 
@@ -47,8 +43,6 @@ class Station(BaseModel):
             raise Exception("Vehicle not found at this station")
 
 
-
 class StationWithDistance(Station):
     distance: float
     nearest_available_vehicle: Vehicle | None = None
-

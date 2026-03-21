@@ -13,17 +13,17 @@ print()
 while True:
     try:
         query = input("sqlite> ").strip()
-        
+
         if query.lower() in ("exit", "quit"):
             print("Goodbye!")
             break
-        
+
         if not query:
             continue
-        
+
         cursor = conn.cursor()
         cursor.execute(query)
-        
+
         # Check if it's a SELECT (returns rows)
         if query.strip().upper().startswith("SELECT"):
             rows = cursor.fetchall()
@@ -36,9 +36,9 @@ while True:
             # INSERT, UPDATE, DELETE
             conn.commit()
             print(f"OK ({cursor.rowcount} rows affected)")
-        
+
         cursor.close()
-    
+
     except sqlite3.Error as e:
         print(f"Error: {e}")
     except KeyboardInterrupt:

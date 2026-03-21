@@ -2,6 +2,7 @@
 Centralized lock manager for handling concurrent access to shared resources.
 Provides locks for vehicles, users, stations, and rides to prevent race conditions.
 """
+
 import asyncio
 from typing import Dict, Union
 from contextlib import asynccontextmanager
@@ -34,10 +35,7 @@ class LockManager:
 
     @asynccontextmanager
     async def _generic_lock(
-        self,
-        resource_id: Union[str, int],
-        locks_dict: Dict,
-        master_lock: asyncio.Lock
+        self, resource_id: Union[str, int], locks_dict: Dict, master_lock: asyncio.Lock
     ):
         """
         Generic lock acquisition for any resource type.
@@ -68,7 +66,9 @@ class LockManager:
                 # Perform vehicle operations
                 pass
         """
-        async with self._generic_lock(vehicle_id, self._vehicle_locks, self._vehicle_master_lock):
+        async with self._generic_lock(
+            vehicle_id, self._vehicle_locks, self._vehicle_master_lock
+        ):
             yield
 
     @asynccontextmanager
@@ -81,7 +81,9 @@ class LockManager:
                 # Check and modify user's active ride
                 pass
         """
-        async with self._generic_lock(user_id, self._user_locks, self._user_master_lock):
+        async with self._generic_lock(
+            user_id, self._user_locks, self._user_master_lock
+        ):
             yield
 
     @asynccontextmanager
@@ -94,7 +96,9 @@ class LockManager:
                 # Check capacity and dock vehicle
                 pass
         """
-        async with self._generic_lock(station_id, self._station_locks, self._station_master_lock):
+        async with self._generic_lock(
+            station_id, self._station_locks, self._station_master_lock
+        ):
             yield
 
     @asynccontextmanager
@@ -107,7 +111,9 @@ class LockManager:
                 # Modify ride state
                 pass
         """
-        async with self._generic_lock(ride_id, self._ride_locks, self._ride_master_lock):
+        async with self._generic_lock(
+            ride_id, self._ride_locks, self._ride_master_lock
+        ):
             yield
 
     @asynccontextmanager

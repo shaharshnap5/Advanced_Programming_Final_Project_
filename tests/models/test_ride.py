@@ -10,8 +10,8 @@ Tests cover:
 """
 
 import pytest
-from unittest.mock import Mock, patch
-from datetime import datetime, date
+from unittest.mock import Mock
+from datetime import datetime
 
 from src.models.ride import Ride, process_end_of_ride
 from src.models.user import User
@@ -29,7 +29,7 @@ class TestRide:
             vehicle_id="VEHICLE001",
             start_station_id=1,
             start_time=datetime(2026, 3, 17, 10, 0, 0),
-            is_degraded_report=False
+            is_degraded_report=False,
         )
 
     @pytest.fixture
@@ -41,7 +41,7 @@ class TestRide:
             vehicle_id="VEHICLE002",
             start_station_id=2,
             start_time=datetime(2026, 3, 17, 11, 0, 0),
-            is_degraded_report=True
+            is_degraded_report=True,
         )
 
     @pytest.fixture
@@ -54,7 +54,7 @@ class TestRide:
             start_station_id=3,
             start_time=datetime(2026, 3, 17, 12, 0, 0),
             end_time=datetime(2026, 3, 17, 12, 30, 0),
-            is_degraded_report=False
+            is_degraded_report=False,
         )
 
     def test_ride_initialization(self, valid_ride):
@@ -71,7 +71,7 @@ class TestRide:
             user_id="USER003",
             vehicle_id="VEHICLE003",
             start_station_id=3,
-            start_time=datetime(2026, 3, 17, 12, 0)
+            start_time=datetime(2026, 3, 17, 12, 0),
         )
         assert ride.is_degraded_report is False
 
@@ -102,8 +102,22 @@ class TestRide:
 
     def test_ride_multiple_instances(self):
         """Test that multiple Ride instances can be created independently."""
-        ride1 = Ride(ride_id="R1", user_id="U1", vehicle_id="V1", start_station_id=1, start_time=datetime.now(), is_degraded_report=False)
-        ride2 = Ride(ride_id="R2", user_id="U2", vehicle_id="V2", start_station_id=2, start_time=datetime.now(), is_degraded_report=True)
+        ride1 = Ride(
+            ride_id="R1",
+            user_id="U1",
+            vehicle_id="V1",
+            start_station_id=1,
+            start_time=datetime.now(),
+            is_degraded_report=False,
+        )
+        ride2 = Ride(
+            ride_id="R2",
+            user_id="U2",
+            vehicle_id="V2",
+            start_station_id=2,
+            start_time=datetime.now(),
+            is_degraded_report=True,
+        )
 
         assert ride1.ride_id != ride2.ride_id
         assert ride1.calculate_cost() == 15
@@ -116,7 +130,7 @@ class TestRide:
                 ride_id="RIDE004",
                 user_id="USER004",
                 vehicle_id="VEHICLE004",
-                start_station_id=4
+                start_station_id=4,
                 # Missing start_time
             )
 
@@ -127,7 +141,7 @@ class TestRide:
                 ride_id="RIDE005",
                 user_id="USER005",
                 vehicle_id="VEHICLE005",
-                start_time=datetime.now()
+                start_time=datetime.now(),
                 # Missing start_station_id
             )
 
@@ -147,7 +161,7 @@ class TestRide:
             user_id="USER006",
             vehicle_id="VEHICLE006",
             start_station_id=6,
-            start_time=datetime.now()
+            start_time=datetime.now(),
         )
         assert ride.end_time is None
 
@@ -167,14 +181,14 @@ class TestRide:
             user_id="U1",
             vehicle_id="V1",
             start_station_id=1,
-            start_time=datetime(2026, 3, 17, 10, 0)
+            start_time=datetime(2026, 3, 17, 10, 0),
         )
         ride2 = Ride(
             ride_id="R2",
             user_id="U2",
             vehicle_id="V2",
             start_station_id=5,
-            start_time=datetime(2026, 3, 17, 11, 0)
+            start_time=datetime(2026, 3, 17, 11, 0),
         )
         assert ride1.start_station_id != ride2.start_station_id
 
@@ -217,7 +231,7 @@ class TestProcessEndOfRide:
             vehicle_id="VEHICLE001",
             start_station_id=1,
             start_time=datetime(2026, 3, 17, 10, 0),
-            is_degraded_report=False
+            is_degraded_report=False,
         )
 
     @pytest.fixture
@@ -229,7 +243,7 @@ class TestProcessEndOfRide:
             vehicle_id="VEHICLE002",
             start_station_id=2,
             start_time=datetime(2026, 3, 17, 11, 0),
-            is_degraded_report=True
+            is_degraded_report=True,
         )
 
     def test_process_end_of_ride_normal_ride(self, mock_user, normal_ride):
@@ -263,7 +277,7 @@ class TestProcessEndOfRide:
             vehicle_id="V1",
             start_station_id=1,
             start_time=datetime(2026, 3, 17, 10, 0),
-            is_degraded_report=False
+            is_degraded_report=False,
         )
         ride2 = Ride(
             ride_id="R2",
@@ -271,7 +285,7 @@ class TestProcessEndOfRide:
             vehicle_id="V2",
             start_station_id=2,
             start_time=datetime(2026, 3, 17, 11, 0),
-            is_degraded_report=True
+            is_degraded_report=True,
         )
 
         process_end_of_ride(mock_user, ride1)
@@ -288,13 +302,13 @@ class TestProcessEndOfRide:
         call_order = []
 
         def track_charge(amount):
-            call_order.append(('charge', amount))
+            call_order.append(("charge", amount))
 
         mock_user.charge = Mock(side_effect=track_charge)
 
         process_end_of_ride(mock_user, normal_ride)
 
-        assert ('charge', 15) in call_order
+        assert ("charge", 15) in call_order
 
     def test_process_end_of_ride_preserves_user_data(self, mock_user, normal_ride):
         """Test that process_end_of_ride doesn't modify other user attributes."""
@@ -309,9 +323,14 @@ class TestProcessEndOfRide:
     def test_process_end_of_ride_with_different_ride_ids(self, mock_user):
         """Test processing rides with different IDs."""
         rides = [
-            Ride(ride_id=f"R{i}", user_id=f"U{i}", vehicle_id=f"V{i}",
-                 start_station_id=i, start_time=datetime(2026, 3, 17, 10 + i, 0),
-                 is_degraded_report=i % 2 == 0)
+            Ride(
+                ride_id=f"R{i}",
+                user_id=f"U{i}",
+                vehicle_id=f"V{i}",
+                start_station_id=i,
+                start_time=datetime(2026, 3, 17, 10 + i, 0),
+                is_degraded_report=i % 2 == 0,
+            )
             for i in range(3)
         ]
 
@@ -328,7 +347,7 @@ class TestProcessEndOfRide:
             vehicle_id="VEHICLE_D",
             start_station_id=1,
             start_time=datetime(2026, 3, 17, 12, 0),
-            is_degraded_report=True
+            is_degraded_report=True,
         )
 
         process_end_of_ride(mock_user, degraded_ride)
@@ -345,7 +364,7 @@ class TestProcessEndOfRide:
             start_station_id=5,
             start_time=datetime(2026, 3, 17, 14, 0),
             end_time=datetime(2026, 3, 17, 14, 45),
-            is_degraded_report=False
+            is_degraded_report=False,
         )
 
         process_end_of_ride(mock_user, ride)

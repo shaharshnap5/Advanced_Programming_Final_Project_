@@ -9,9 +9,9 @@ from src.models.station import Station, StationWithDistance
 @pytest.mark.asyncio
 async def test_get_by_id(test_db):
     repo = StationsRepository()
-    
+
     station = await repo.get_by_id(test_db, 1)
-    
+
     assert station is not None
     assert isinstance(station, Station)
     assert station.station_id == 1
@@ -24,9 +24,9 @@ async def test_get_by_id(test_db):
 @pytest.mark.asyncio
 async def test_get_by_id_not_found(test_db):
     repo = StationsRepository()
-    
+
     station = await repo.get_by_id(test_db, 999)
-    
+
     assert station is None
 
 
@@ -47,14 +47,14 @@ async def test_get_by_id_with_vehicles(test_db):
 @pytest.mark.asyncio
 async def test_get_nearest(test_db):
     repo = StationsRepository()
-    
+
     # Query near station 1 (32.0, 34.0)
     station = await repo.get_nearest(test_db, lon=34.0, lat=32.0)
-    
+
     assert station is not None
     assert isinstance(station, StationWithDistance)
     assert station.station_id == 1
-    assert hasattr(station, 'distance')
+    assert hasattr(station, "distance")
     # Verify vehicles are populated
     assert isinstance(station.vehicles, list)
     assert len(station.vehicles) > 0
@@ -78,10 +78,10 @@ async def test_get_nearest_vehicles_populated(test_db):
 @pytest.mark.asyncio
 async def test_get_nearest_returns_closest(test_db):
     repo = StationsRepository()
-    
+
     # Query closer to station 2 (32.1, 34.1)
     station = await repo.get_nearest(test_db, lon=34.1, lat=32.1)
-    
+
     assert station is not None
     assert isinstance(station, StationWithDistance)
     assert station.station_id == 2
