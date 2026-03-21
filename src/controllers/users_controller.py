@@ -12,6 +12,12 @@ router = APIRouter(prefix="/users", tags=["users"])
 service = UsersService()
 
 
+@router.get("/active", response_model=list[User])
+async def get_active_users(db: Connection = Depends(get_db)) -> list[User]:
+    """Return all users currently in the middle of a ride."""
+    return await service.list_active_users(db)
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=User)
 async def create_user(
     request: Request,

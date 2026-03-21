@@ -5,11 +5,17 @@ import aiosqlite
 
 from src.models.user import User
 from src.repositories.users_repository import UsersRepository
+from src.repositories.rides_repository import RidesRepository
 
 
 class UsersService:
-    def __init__(self, repository: UsersRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: UsersRepository | None = None,
+        rides_repository: RidesRepository | None = None,
+    ) -> None:
         self._repository = repository or UsersRepository()
+        self._rides_repository = rides_repository or RidesRepository()
 
     async def _generate_unique_user_id(self, db: aiosqlite.Connection) -> str:
         """Generate a unique server-side user identifier."""
@@ -60,3 +66,7 @@ class UsersService:
             email=email,
             payment_token=token,
         )
+
+    async def list_active_users(self, db: aiosqlite.Connection) -> list[User]:
+        """Return users who currently have an active ride."""
+        return await self._rides_repository.get_active_users(db)

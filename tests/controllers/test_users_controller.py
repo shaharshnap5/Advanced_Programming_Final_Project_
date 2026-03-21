@@ -71,3 +71,33 @@ async def test_create_user_invalid_payload():
     assert response.status_code == 400
     missing_fields = {error["loc"][-1] for error in response.json()["detail"]}
     assert {"first_name", "last_name", "email"}.issubset(missing_fields)
+
+
+@pytest.mark.asyncio
+async def test_get_active_users_success():
+    with patch("src.controllers.users_controller.service.list_active_users", new_callable=AsyncMock) as mock_active:
+        mock_active.return_value = [
+            User(user_id="USER_A", first_name="A", last_name="A", email="a@example.com", payment_token="tok1"),
+            User(user_id="USER_B", first_name="B", last_name="B", email="b@example.com", payment_token="tok2"),
+        ]
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/users/active")
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+        assert len(response.json()) == 2
+        assert response.json()[0]["user_id"] == "USER_A"
+        assert response.json()[1]["user_id"] == "USER_B"
+
+
+@pytest.mark.asyncio
+async def test_get_active_users_empty_list():
+    with patch("src.controllers.users_controller.service.list_active_users", new_callable=AsyncMock) as mock_active:
+        mock_active.return_value = []
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/users/active")
+
+        assert response.status_code == 200
+        assert response.json() == []
