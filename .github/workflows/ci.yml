@@ -4,10 +4,32 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
+  lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run flake8
+        run: |
+          flake8 src tests scripts
+
   test:
+    needs: [lint]
+    if: ${{ always() && (github.event_name != 'pull_request' || needs.lint.result == 'success') }}
     runs-on: ubuntu-latest
 
     strategy:

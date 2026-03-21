@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.controllers.stations_controller import router as stations_router
@@ -20,13 +19,13 @@ async def not_found_handler(request: Request, exc: StarletteHTTPException):
     if exc.detail == "Not Found":
         return JSONResponse(
             status_code=404,
-            content={"error": "Not Found", "message": f"Route '{request.url.path}' does not exist"}
+            content={
+                "error": "Not Found",
+                "message": f"Route '{request.url.path}' does not exist",
+            },
         )
     # Otherwise preserve the original detail message from the application
-    return JSONResponse(
-        status_code=404,
-        content={"detail": exc.detail}
-    )
+    return JSONResponse(status_code=404, content={"detail": exc.detail})
 
 
 # Global exception handler for unhandled exceptions (500 errors)
@@ -34,7 +33,10 @@ async def not_found_handler(request: Request, exc: StarletteHTTPException):
 async def generic_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
-        content={"error": "Internal Server Error", "message": "An unexpected error occurred"}
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred",
+        },
     )
 
 

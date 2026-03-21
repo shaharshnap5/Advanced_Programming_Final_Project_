@@ -62,10 +62,13 @@ class UsersService:
         if not created:
             raise ValueError(f"Failed to create user with id {user_id}")
 
-        return User(
-            user_id=user_id,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            payment_token=token,
-        ), False
+        return (
+            User(
+                user_id=user_id,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                payment_token=token,
+            ),
+            False,
+        )

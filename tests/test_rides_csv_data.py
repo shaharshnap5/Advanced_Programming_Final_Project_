@@ -74,58 +74,50 @@ class TestRidesCSVData:
     def test_ride_has_valid_user_id(self, db_connection):
         """Test that rides reference valid users."""
         cursor = db_connection.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT r.ride_id, r.user_id
             FROM rides r
             LEFT JOIN users u ON r.user_id = u.user_id
             WHERE u.user_id IS NULL
             LIMIT 1
-            """
-        )
+            """)
         result = cursor.fetchone()
         assert result is None, "Found ride with non-existent user"
 
     def test_ride_has_valid_vehicle_id(self, db_connection):
         """Test that rides reference valid vehicles."""
         cursor = db_connection.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT r.ride_id, r.vehicle_id
             FROM rides r
             LEFT JOIN vehicles v ON r.vehicle_id = v.vehicle_id
             WHERE v.vehicle_id IS NULL
             LIMIT 1
-            """
-        )
+            """)
         result = cursor.fetchone()
         assert result is None, "Found ride with non-existent vehicle"
 
     def test_ride_has_valid_start_station(self, db_connection):
         """Test that rides reference valid start stations."""
         cursor = db_connection.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT r.ride_id, r.start_station_id
             FROM rides r
             LEFT JOIN stations s ON r.start_station_id = s.station_id
             WHERE s.station_id IS NULL
             LIMIT 1
-            """
-        )
+            """)
         result = cursor.fetchone()
         assert result is None, "Found ride with non-existent start station"
 
     def test_ride_example(self, db_connection):
         """Test retrieving a specific ride."""
         cursor = db_connection.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT ride_id, user_id, vehicle_id, start_station_id, end_station_id, is_degraded_report
             FROM rides
             WHERE ride_id = 'RIDE001'
-            """
-        )
+            """)
         row = cursor.fetchone()
         assert row is not None
         assert row["ride_id"] == "RIDE001"
@@ -147,7 +139,9 @@ class TestRidesCSVData:
         cursor = db_connection.cursor()
         cursor.execute("SELECT ride_id, start_time, end_time FROM rides LIMIT 5")
         for row in cursor.fetchall():
-            assert row["start_time"] is not None, f"Ride {row['ride_id']} has null start_time"
+            assert (
+                row["start_time"] is not None
+            ), f"Ride {row['ride_id']} has null start_time"
             # end_time can be null for ongoing rides
             if row["end_time"]:
                 # Basic validation that times are in proper format
@@ -156,21 +150,16 @@ class TestRidesCSVData:
     def test_all_rides_have_user_and_vehicle(self, db_connection):
         """Test that all rides have associated user and vehicle."""
         cursor = db_connection.cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT COUNT(*) FROM rides
             WHERE user_id IS NOT NULL AND vehicle_id IS NOT NULL
-            """
-        )
+            """)
         count = cursor.fetchone()[0]
         assert count == 25, "Not all rides have user and vehicle"
 
     def test_ride_end_station_can_be_null(self, db_connection):
         """Test that end_station_id can be NULL for ongoing rides."""
         cursor = db_connection.cursor()
-        cursor.execute(
-            "SELECT COUNT(*) FROM rides WHERE end_station_id IS NOT NULL"
-        )
+        cursor.execute("SELECT COUNT(*) FROM rides WHERE end_station_id IS NOT NULL")
         count = cursor.fetchone()[0]
         assert count > 0, "All rides have end_station_id set (should test nullable)"
-

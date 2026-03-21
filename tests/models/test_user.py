@@ -6,9 +6,6 @@ Tests cover:
 """
 
 import pytest
-from unittest.mock import Mock, patch
-from io import StringIO
-import sys
 
 from src.models.user import User
 
@@ -60,7 +57,7 @@ class TestUser:
             first_name="No",
             last_name="Token",
             email="no.token@example.com",
-            payment_token=""
+            payment_token="",
         )
 
         with pytest.raises(ValueError, match="No payment token found for user"):
@@ -73,7 +70,7 @@ class TestUser:
             first_name="None",
             last_name="Token",
             email="none.token@example.com",
-            payment_token=""
+            payment_token="",
         )
 
         with pytest.raises(ValueError):
@@ -96,8 +93,20 @@ class TestUser:
 
     def test_multiple_users_independent(self):
         """Test that multiple User instances are independent."""
-        user1 = User(user_id="U1", first_name="First", last_name="One", email="u1@example.com", payment_token="tok1")
-        user2 = User(user_id="U2", first_name="Second", last_name="Two", email="u2@example.com", payment_token="tok2")
+        user1 = User(
+            user_id="U1",
+            first_name="First",
+            last_name="One",
+            email="u1@example.com",
+            payment_token="tok1",
+        )
+        user2 = User(
+            user_id="U2",
+            first_name="Second",
+            last_name="Two",
+            email="u2@example.com",
+            payment_token="tok2",
+        )
 
         assert user1.user_id != user2.user_id
 
@@ -135,4 +144,3 @@ class TestUser:
         valid_user.email = "different@example.com"
 
         assert valid_user.can_start_ride() is True  # Should still be True
-

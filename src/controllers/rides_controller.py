@@ -6,7 +6,9 @@ from src.models.ride import Ride, User
 from src.services.rides_service import RideService
 
 # 3. Import your database connection dependency
-from src.db import get_db  # Adjust this import based on where your get_db function lives
+from src.db import (
+    get_db,
+)  # Adjust this import based on where your get_db function lives
 
 # Create the router
 router = APIRouter(prefix="/rides", tags=["Rides"])
@@ -19,10 +21,10 @@ async def get_active_users(db: aiosqlite.Connection = Depends(get_db)) -> list[U
     """Return all users who are currently in the middle of a ride."""
     return await service.list_active_users(db)
 
+
 @router.post("/start", response_model=Ride)  # Make sure this matches your return schema
 async def start_ride(
-        request: RideStartRequest,
-        db: aiosqlite.Connection = Depends(get_db)
+    request: RideStartRequest, db: aiosqlite.Connection = Depends(get_db)
 ):
     try:
         # Pass the user_id, lon, and lat straight from the request into your service
@@ -50,18 +52,15 @@ async def start_ride(
 
 
 @router.post("/end", response_model=EndRideResponse)
-async def end_ride(
-    payload: EndRidePayload,
-    db: aiosqlite.Connection = Depends(get_db)
-):
+async def end_ride(payload: EndRidePayload, db: aiosqlite.Connection = Depends(get_db)):
     """
     End an active ride and dock the vehicle at the nearest station with available capacity.
-    
+
     Request body:
     - ride_id: str - The unique identifier of the ride to end
     - lon: float - The longitude of the drop-off location
     - lat: float - The latitude of the drop-off location
-    
+
     Returns:
     - end_station_id: int - The ID of the station where vehicle was docked
     - payment_charged: int - The amount charged (15 ILS for normal ride, 0 for degraded)
@@ -69,11 +68,13 @@ async def end_ride(
     try:
         # Validate payload
         if not payload.ride_id or payload.lon is None or payload.lat is None:
-            raise HTTPException(status_code=400, detail="Missing required fields: ride_id, lon, lat")
-        
+            raise HTTPException(
+                status_code=400, detail="Missing required fields: ride_id, lon, lat"
+            )
+
         result = await service.end_ride(db, payload.ride_id, payload.lon, payload.lat)
         return result
-        
+
     except HTTPException as e:
         raise e
     except ValueError as e:

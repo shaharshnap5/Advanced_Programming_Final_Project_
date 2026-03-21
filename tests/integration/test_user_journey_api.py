@@ -7,7 +7,12 @@ from httpx import AsyncClient, ASGITransport
 
 from db.schema import CREATE_SQL
 from src.main import app
-from src.controllers import users_controller, rides_controller, vehicles_controller, stations_controller
+from src.controllers import (
+    users_controller,
+    rides_controller,
+    vehicles_controller,
+    stations_controller,
+)
 
 
 @pytest_asyncio.fixture
@@ -54,7 +59,9 @@ async def isolated_api_client() -> AsyncClient:
     app.dependency_overrides[vehicles_controller.get_db] = override_get_db
     app.dependency_overrides[stations_controller.get_db] = override_get_db
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         # Expose the in-memory DB for edge-case mutation in specific tests.
         client._test_db = db  # type: ignore[attr-defined]
         yield client
@@ -64,7 +71,9 @@ async def isolated_api_client() -> AsyncClient:
 
 
 @pytest.mark.asyncio
-async def test_full_user_journey_register_start_end_and_station_capacity(isolated_api_client: AsyncClient):
+async def test_full_user_journey_register_start_end_and_station_capacity(
+    isolated_api_client: AsyncClient,
+):
     # Register a user
     register_response = await isolated_api_client.post(
         "/users/register",
@@ -136,7 +145,9 @@ async def test_api_endpoints_contract_happy_path(isolated_api_client: AsyncClien
     assert register_response.status_code == 201
     assert register_response.json()["user"]["user_id"] == "USER_API_001"
 
-    nearest_response = await isolated_api_client.get("/stations/nearest?lon=34.0&lat=32.0")
+    nearest_response = await isolated_api_client.get(
+        "/stations/nearest?lon=34.0&lat=32.0"
+    )
     assert nearest_response.status_code == 200
     assert "station_id" in nearest_response.json()
 
@@ -150,7 +161,9 @@ async def test_api_endpoints_contract_happy_path(isolated_api_client: AsyncClien
 
     active_users_response = await isolated_api_client.get("/rides/active-users")
     assert active_users_response.status_code == 200
-    assert any(user["user_id"] == "USER_API_001" for user in active_users_response.json())
+    assert any(
+        user["user_id"] == "USER_API_001" for user in active_users_response.json()
+    )
 
     end_response = await isolated_api_client.post(
         "/rides/end",
@@ -159,29 +172,39 @@ async def test_api_endpoints_contract_happy_path(isolated_api_client: AsyncClien
     assert end_response.status_code == 200
     assert end_response.json()["payment_charged"] == 15
 
-    report_degraded_response = await isolated_api_client.post(f"/vehicles/{rented_vehicle_id}/report-degraded")
+    report_degraded_response = await isolated_api_client.post(
+        f"/vehicles/{rented_vehicle_id}/report-degraded"
+    )
     assert report_degraded_response.status_code == 200
     assert report_degraded_response.json()["status"] == "degraded"
 
-    treat_response = await isolated_api_client.post("/vehicles/BICYCLE_TREAT_001/treat?station_id=1")
+    treat_response = await isolated_api_client.post(
+        "/vehicles/BICYCLE_TREAT_001/treat?station_id=1"
+    )
     assert treat_response.status_code == 200
     assert treat_response.json()["status"] == "available"
     assert treat_response.json()["station_id"] == 1
 
 
 @pytest.mark.asyncio
-async def test_error_state_global_and_business_handlers(isolated_api_client: AsyncClient):
+async def test_error_state_global_and_business_handlers(
+    isolated_api_client: AsyncClient,
+):
     # 400: invalid register payload shape
     bad_register_response = await isolated_api_client.post("/users/register", json={})
     assert bad_register_response.status_code == 400
 
     # 404: global route-not-found handler
-    route_not_found_response = await isolated_api_client.get("/definitely-not-a-real-route")
+    route_not_found_response = await isolated_api_client.get(
+        "/definitely-not-a-real-route"
+    )
     assert route_not_found_response.status_code == 404
     assert route_not_found_response.json()["error"] == "Not Found"
 
     # 409: reporting already-degraded vehicle again
-    first_report = await isolated_api_client.post("/vehicles/BICYCLE_TREAT_001/report-degraded")
+    first_report = await isolated_api_client.post(
+        "/vehicles/BICYCLE_TREAT_001/report-degraded"
+    )
     assert first_report.status_code == 409
 
     # 404: resource-level not found still preserved by global 404 handler
@@ -191,7 +214,9 @@ async def test_error_state_global_and_business_handlers(isolated_api_client: Asy
 
 
 @pytest.mark.asyncio
-async def test_active_users_returns_empty_list_when_no_active_rides(isolated_api_client: AsyncClient):
+async def test_active_users_returns_empty_list_when_no_active_rides(
+    isolated_api_client: AsyncClient,
+):
     response = await isolated_api_client.get("/rides/active-users")
 
     assert response.status_code == 200
@@ -199,7 +224,9 @@ async def test_active_users_returns_empty_list_when_no_active_rides(isolated_api
 
 
 @pytest.mark.asyncio
-async def test_start_ride_fails_for_unknown_user_with_404(isolated_api_client: AsyncClient):
+async def test_start_ride_fails_for_unknown_user_with_404(
+    isolated_api_client: AsyncClient,
+):
     response = await isolated_api_client.post(
         "/rides/start",
         json={"user_id": "UNKNOWN_USER", "lon": 34.0, "lat": 32.0},
@@ -210,7 +237,9 @@ async def test_start_ride_fails_for_unknown_user_with_404(isolated_api_client: A
 
 
 @pytest.mark.asyncio
-async def test_start_ride_missing_coordinates_returns_400(isolated_api_client: AsyncClient):
+async def test_start_ride_missing_coordinates_returns_400(
+    isolated_api_client: AsyncClient,
+):
     register_response = await isolated_api_client.post(
         "/users/register",
         json={
@@ -232,7 +261,9 @@ async def test_start_ride_missing_coordinates_returns_400(isolated_api_client: A
 
 
 @pytest.mark.asyncio
-async def test_start_ride_twice_for_same_user_returns_409(isolated_api_client: AsyncClient):
+async def test_start_ride_twice_for_same_user_returns_409(
+    isolated_api_client: AsyncClient,
+):
     register_response = await isolated_api_client.post(
         "/users/register",
         json={
@@ -271,7 +302,9 @@ async def test_end_ride_unknown_ride_returns_404(isolated_api_client: AsyncClien
 
 
 @pytest.mark.asyncio
-async def test_end_ride_second_end_attempt_returns_409(isolated_api_client: AsyncClient):
+async def test_end_ride_second_end_attempt_returns_409(
+    isolated_api_client: AsyncClient,
+):
     register_response = await isolated_api_client.post(
         "/users/register",
         json={
@@ -315,7 +348,9 @@ async def test_treat_vehicle_not_eligible_returns_400(isolated_api_client: Async
 
 
 @pytest.mark.asyncio
-async def test_treat_degraded_without_station_id_returns_400(isolated_api_client: AsyncClient):
+async def test_treat_degraded_without_station_id_returns_400(
+    isolated_api_client: AsyncClient,
+):
     response = await isolated_api_client.post("/vehicles/BICYCLE_TREAT_001/treat")
 
     assert response.status_code == 400
@@ -323,7 +358,9 @@ async def test_treat_degraded_without_station_id_returns_400(isolated_api_client
 
 
 @pytest.mark.asyncio
-async def test_report_degraded_for_missing_vehicle_returns_404(isolated_api_client: AsyncClient):
+async def test_report_degraded_for_missing_vehicle_returns_404(
+    isolated_api_client: AsyncClient,
+):
     response = await isolated_api_client.post("/vehicles/NOT_EXISTS/report-degraded")
 
     assert response.status_code == 404
@@ -331,14 +368,18 @@ async def test_report_degraded_for_missing_vehicle_returns_404(isolated_api_clie
 
 
 @pytest.mark.asyncio
-async def test_stations_nearest_missing_query_params_returns_422(isolated_api_client: AsyncClient):
+async def test_stations_nearest_missing_query_params_returns_422(
+    isolated_api_client: AsyncClient,
+):
     response = await isolated_api_client.get("/stations/nearest")
 
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_start_ride_no_available_vehicles_in_system_returns_404(isolated_api_client: AsyncClient):
+async def test_start_ride_no_available_vehicles_in_system_returns_404(
+    isolated_api_client: AsyncClient,
+):
     register_response = await isolated_api_client.post(
         "/users/register",
         json={
@@ -364,7 +405,9 @@ async def test_start_ride_no_available_vehicles_in_system_returns_404(isolated_a
 
 
 @pytest.mark.asyncio
-async def test_start_ride_no_eligible_vehicle_returns_409(isolated_api_client: AsyncClient):
+async def test_start_ride_no_eligible_vehicle_returns_409(
+    isolated_api_client: AsyncClient,
+):
     register_response = await isolated_api_client.post(
         "/users/register",
         json={
@@ -379,7 +422,9 @@ async def test_start_ride_no_eligible_vehicle_returns_409(isolated_api_client: A
     db = isolated_api_client._test_db  # type: ignore[attr-defined]
     await db.execute("DELETE FROM scooters WHERE vehicle_id = 'SCOOTER_001'")
     await db.execute("DELETE FROM vehicles WHERE vehicle_id = 'SCOOTER_001'")
-    await db.execute("UPDATE vehicles SET rides_since_last_treated = 11 WHERE vehicle_id = 'BICYCLE_001'")
+    await db.execute(
+        "UPDATE vehicles SET rides_since_last_treated = 11 WHERE vehicle_id = 'BICYCLE_001'"
+    )
     await db.commit()
 
     response = await isolated_api_client.post(
@@ -388,11 +433,16 @@ async def test_start_ride_no_eligible_vehicle_returns_409(isolated_api_client: A
     )
 
     assert response.status_code == 409
-    assert "eligibility" in response.json()["detail"].lower() or "eligible" in response.json()["detail"].lower()
+    assert (
+        "eligibility" in response.json()["detail"].lower()
+        or "eligible" in response.json()["detail"].lower()
+    )
 
 
 @pytest.mark.asyncio
-async def test_end_ride_no_station_with_capacity_returns_400(isolated_api_client: AsyncClient):
+async def test_end_ride_no_station_with_capacity_returns_400(
+    isolated_api_client: AsyncClient,
+):
     register_response = await isolated_api_client.post(
         "/users/register",
         json={
@@ -458,10 +508,14 @@ async def test_report_degraded_auto_ends_active_ride(isolated_api_client: AsyncC
     assert start_response.status_code == 200
     rented_vehicle_id = start_response.json()["vehicle_id"]
 
-    report_response = await isolated_api_client.post(f"/vehicles/{rented_vehicle_id}/report-degraded")
+    report_response = await isolated_api_client.post(
+        f"/vehicles/{rented_vehicle_id}/report-degraded"
+    )
     assert report_response.status_code == 200
     assert report_response.json()["status"] == "degraded"
 
     active_users_response = await isolated_api_client.get("/rides/active-users")
     assert active_users_response.status_code == 200
-    assert all(user["user_id"] != "USER_REPORT_FLOW" for user in active_users_response.json())
+    assert all(
+        user["user_id"] != "USER_REPORT_FLOW" for user in active_users_response.json()
+    )

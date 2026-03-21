@@ -28,7 +28,9 @@ class VehiclesRepository:
     def _to_vehicle(row: aiosqlite.Row) -> Vehicle:
         return VehicleFactory.from_row(dict(row))
 
-    async def _update_electric_battery(self, db: aiosqlite.Connection, vehicle: Vehicle) -> None:
+    async def _update_electric_battery(
+        self, db: aiosqlite.Connection, vehicle: Vehicle
+    ) -> None:
         if vehicle.vehicle_type.value == "electric_bicycle":
             await db.execute(
                 "UPDATE electric_bicycles SET battery = ? WHERE vehicle_id = ?",
@@ -40,7 +42,9 @@ class VehiclesRepository:
                 (vehicle.battery, vehicle.vehicle_id),
             )
 
-    async def get_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
+    async def get_by_id(
+        self, db: aiosqlite.Connection, vehicle_id: str
+    ) -> Vehicle | None:
         cursor = await db.execute(
             f"""
             {self.BASE_SELECT}
@@ -52,7 +56,9 @@ class VehiclesRepository:
         await cursor.close()
         return self._to_vehicle(row) if row else None
 
-    async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> bool:
+    async def treat_vehicle(
+        self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None
+    ) -> bool:
         """Perform maintenance on a vehicle.
         Sets: status='available', rides_since_last_treated=0, last_treated_date=today.
         Updates station_id if provided by service layer.
@@ -79,7 +85,11 @@ class VehiclesRepository:
             (
                 vehicle.status.value,
                 vehicle.rides_since_last_treated,
-                vehicle.last_treated_date.isoformat() if vehicle.last_treated_date else None,
+                (
+                    vehicle.last_treated_date.isoformat()
+                    if vehicle.last_treated_date
+                    else None
+                ),
                 vehicle.station_id,
                 vehicle_id,
             ),
@@ -90,8 +100,9 @@ class VehiclesRepository:
         await cursor.close()
         return affected > 0
 
-
-    async def mark_vehicle_degraded_and_detach(self, db: aiosqlite.Connection, vehicle_id: str) -> bool:
+    async def mark_vehicle_degraded_and_detach(
+        self, db: aiosqlite.Connection, vehicle_id: str
+    ) -> bool:
         """Mark a vehicle as degraded and detach it from any station."""
         cursor = await db.execute(
             """
@@ -106,8 +117,9 @@ class VehiclesRepository:
         await cursor.close()
         return affected > 0
 
-
-    async def mark_vehicle_as_rented(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
+    async def mark_vehicle_as_rented(
+        self, db: aiosqlite.Connection, vehicle_id: str
+    ) -> Vehicle | None:
         """Rents a vehicle through its domain model and persists the state with locking."""
         lock_manager = LockManager()
 
@@ -133,7 +145,9 @@ class VehiclesRepository:
             await db.commit()
             return vehicle
 
-    async def get_available_vehicles_by_station(self, db: aiosqlite.Connection, station_id: int) -> list[Vehicle]:
+    async def get_available_vehicles_by_station(
+        self, db: aiosqlite.Connection, station_id: int
+    ) -> list[Vehicle]:
         query = f"""
             {self.BASE_SELECT}
             WHERE v.station_id = ? AND v.status = 'available'
@@ -143,7 +157,9 @@ class VehiclesRepository:
             rows = await cursor.fetchall()
             return [self._to_vehicle(row) for row in rows]
 
-    async def dock_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int) -> Vehicle | None:
+    async def dock_vehicle(
+        self, db: aiosqlite.Connection, vehicle_id: str, station_id: int
+    ) -> Vehicle | None:
         """
         Docks a vehicle at a station after ride completion with locking.
         The domain model determines ride counters, battery drain, and final status.
@@ -156,7 +172,9 @@ class VehiclesRepository:
                 raise ValueError(f"Vehicle {vehicle_id} not found")
 
             if vehicle.status not in [VehicleStatus.rented, VehicleStatus.available]:
-                raise ValueError(f"Vehicle {vehicle_id} cannot be docked in status {vehicle.status}")
+                raise ValueError(
+                    f"Vehicle {vehicle_id} cannot be docked in status {vehicle.status}"
+                )
 
             vehicle.return_vehicle(station_id)
 

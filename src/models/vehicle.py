@@ -4,15 +4,17 @@ import datetime
 from enum import Enum
 from typing import Any, Mapping
 
+
 class VehicleType(str, Enum):
-    bicycle = 'bicycle'
-    electric_bicycle = 'electric_bicycle'
-    scooter = 'scooter'
+    bicycle = "bicycle"
+    electric_bicycle = "electric_bicycle"
+    scooter = "scooter"
+
 
 class VehicleStatus(str, Enum):
-    available = 'available'
-    rented = 'rented'
-    degraded = 'degraded'
+    available = "available"
+    rented = "rented"
+    degraded = "degraded"
 
 
 class Vehicle(BaseModel):
@@ -34,7 +36,10 @@ class Vehicle(BaseModel):
         self.battery = value
 
     def can_rent(self) -> bool:
-        return self.status == VehicleStatus.available and self.rides_since_last_treated <= 10
+        return (
+            self.status == VehicleStatus.available
+            and self.rides_since_last_treated <= 10
+        )
 
     def rent(self):
         """Rents a vehicle if it is currently eligible."""
@@ -47,7 +52,6 @@ class Vehicle(BaseModel):
     def end_active_ride(self):
         """Completes an active ride and updates per-ride counters."""
         self.rides_since_last_treated += 1
-
 
     def return_vehicle(self, station_id: int):
         """Returns the vehicle to a station and updates its status.
@@ -65,13 +69,11 @@ class Vehicle(BaseModel):
     def report_degraded(self):
         self.status = VehicleStatus.degraded
 
-
     def treat(self):
         """Treats a vehicle by resetting maintenance related fields."""
         self.status = VehicleStatus.available
         self.rides_since_last_treated = 0
         self.last_treated_date = datetime.date.today()
-
 
 
 class ElectricVehicle(Vehicle):
@@ -84,7 +86,6 @@ class ElectricVehicle(Vehicle):
         """Treats and fully recharges the electric vehicle."""
         super().treat()
         self.battery = 100
-
 
     def rent(self):
         """Rents the electric vehicle only when it has enough battery for one full ride."""
@@ -107,17 +108,17 @@ class ElectricVehicle(Vehicle):
             raise Exception("Cannot charge a vehicle that is not available")
 
 
-
 class Bicycle(Vehicle):
     """Represents a standard bicycle vehicle."""
+
     vehicle_type: VehicleType = VehicleType.bicycle
 
 
 class ElectricBicycle(ElectricVehicle):
     """Represents an electric bicycle vehicle."""
+
     vehicle_type: VehicleType = VehicleType.electric_bicycle
     battery: int = 100
-
 
 
 class Scooter(ElectricVehicle):
@@ -127,18 +128,22 @@ class Scooter(ElectricVehicle):
 
 class VehicleFactory:
     @staticmethod
-    def create_vehicle(vehicle_id: str, vehicle_type: str, station_id: int | None = None) -> Vehicle:
+    def create_vehicle(
+        vehicle_id: str, vehicle_type: str, station_id: int | None = None
+    ) -> Vehicle:
         base_data = {
             "vehicle_id": vehicle_id,
             "station_id": station_id,
             "status": VehicleStatus.available,
             "rides_since_last_treated": 0,
-            "last_treated_date": None
+            "last_treated_date": None,
         }
 
         v_type = {
             "bicycle": Bicycle(vehicle_type=VehicleType.bicycle, **base_data),
-            "electric_bicycle": ElectricBicycle(vehicle_type=VehicleType.electric_bicycle, **base_data),
+            "electric_bicycle": ElectricBicycle(
+                vehicle_type=VehicleType.electric_bicycle, **base_data
+            ),
             "scooter": Scooter(vehicle_type=VehicleType.scooter, **base_data),
         }
         return v_type[vehicle_type.lower()]
@@ -149,7 +154,11 @@ class VehicleFactory:
         payload = dict(row)
         type_value = payload.get("vehicle_type")
 
-        if type_value in {VehicleType.electric_bicycle.value, VehicleType.scooter.value} and payload.get("battery") is None:
+        if (
+            type_value
+            in {VehicleType.electric_bicycle.value, VehicleType.scooter.value}
+            and payload.get("battery") is None
+        ):
             payload["battery"] = 100
 
         constructor = {
@@ -159,5 +168,3 @@ class VehicleFactory:
         }.get(type_value, Vehicle)
 
         return constructor(**payload)
-
-
