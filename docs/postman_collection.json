@@ -1,0 +1,263 @@
+{
+  "info": {
+    "name": "Advanced Programming Final Project API",
+    "description": "Postman collection for all available API endpoints in this project.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "station_id",
+      "value": "1"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "V000001"
+    },
+    {
+      "key": "user_id",
+      "value": "USER001"
+    },
+    {
+      "key": "first_name",
+      "value": "Tomer"
+    },
+    {
+      "key": "last_name",
+      "value": "User"
+    },
+    {
+      "key": "email",
+      "value": "tomer@example.com"
+    },
+    {
+      "key": "ride_id",
+      "value": "RIDE001"
+    },
+    {
+      "key": "lon",
+      "value": "34.7818"
+    },
+    {
+      "key": "lat",
+      "value": "32.0853"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stations",
+      "item": [
+        {
+          "name": "Get Nearest Station",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stations/nearest?lon={{lon}}&lat={{lat}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["stations", "nearest"],
+              "query": [
+                {
+                  "key": "lon",
+                  "value": "{{lon}}"
+                },
+                {
+                  "key": "lat",
+                  "value": "{{lat}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Station By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stations/{{station_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["stations", "{{station_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"first_name\": \"{{first_name}}\",\n  \"last_name\": \"{{last_name}}\",\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "register"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rides",
+      "item": [
+        {
+          "name": "Get Active Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rides/active-users",
+              "host": ["{{baseUrl}}"],
+              "path": ["rides", "active-users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Ride",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"lon\": {{lon}},\n  \"lat\": {{lat}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rides/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["rides", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "End Ride",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ride_id\": \"{{ride_id}}\",\n  \"lon\": {{lon}},\n  \"lat\": {{lat}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rides/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["rides", "end"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "Get Vehicle By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/{{vehicle_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "{{vehicle_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Treat Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/{{vehicle_id}}/treat?station_id={{station_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "{{vehicle_id}}", "treat"],
+              "query": [
+                {
+                  "key": "station_id",
+                  "value": "{{station_id}}",
+                  "description": "Optional: required for degraded vehicles without station"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Report Vehicle Degraded",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/{{vehicle_id}}/report-degraded",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "{{vehicle_id}}", "report-degraded"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -24,6 +24,14 @@ pytest --cov=src --cov-report=html
 
 Then open `htmlcov/index.html` in your browser to see detailed coverage.
 
+## API testing with Postman
+
+For manual API checks, use the shared Postman collection:
+
+- [docs/postman_collection.json](docs/postman_collection.json)
+
+Import it into Postman, set `baseUrl` (default is `http://127.0.0.1:8000`), and run the requests.
+
 ### Run specific test folder
 
 ```bash

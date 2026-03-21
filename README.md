@@ -60,3 +60,4 @@ See [docs/TESTING.md](docs/TESTING.md) for full details.
 - [docs/DB_SETUP.md](docs/DB_SETUP.md)
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 - [docs/TESTING.md](docs/TESTING.md)
+- [docs/postman_collection.json](docs/postman_collection.json)
