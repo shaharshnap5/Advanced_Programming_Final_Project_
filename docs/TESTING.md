@@ -1,6 +1,6 @@
 # Testing
 
-This project uses `pytest` for testing with comprehensive coverage of repositories, services, and controllers.
+This project uses `pytest` for unit, integration, and API/controller testing.
 
 ## Running tests
 
@@ -22,104 +22,76 @@ pytest --cov=src --cov-report=term-missing
 pytest --cov=src --cov-report=html
 ```
 
-Then open `htmlcov/index.html` in your browser to see detailed coverage.
+Then open `htmlcov/index.html`.
 
-## API testing with Postman
-
-For manual API checks, use the shared Postman collection:
-
-- [docs/postman_collection.json](docs/postman_collection.json)
-
-Import it into Postman, set `baseUrl` (default is `http://127.0.0.1:8000`), and run the requests.
-
-### Run specific test folder
+### Run specific folders
 
 ```bash
+pytest tests/models
 pytest tests/repositories
 pytest tests/services
 pytest tests/controllers
 ```
 
-### Run specific test file
+### Run a specific file / test
 
 ```bash
-pytest tests/repositories/test_stations_repository.py
+pytest tests/controllers/test_rides_controller.py
+pytest tests/controllers/test_rides_controller.py::test_get_active_users_via_api
 ```
 
-### Run specific test
+### Useful flags
 
 ```bash
-pytest tests/repositories/test_stations_repository.py::test_get_by_id
-```
-
-### Run with verbose output
-
-```bash
-pytest -v
-```
-
-### Run and stop on first failure
-
-```bash
-pytest -x
+pytest -v      # verbose
+pytest -x      # stop on first failure
 ```
 
 ## Test structure
 
-```
+```text
 tests/
-├── conftest.py           # Test fixtures
-├── repositories/         # Repository layer tests
-│   ├── test_stations_repository.py
-│   └── test_vehicles_repository.py
-├── services/            # Service layer tests
-│   ├── test_stations_service.py
-│   └── test_vehicles_service.py
-└── controllers/         # Controller layer tests
-    ├── test_stations_controller.py
-    └── test_vehicles_controller.py
+  conftest.py
+  controllers/
+  models/
+  repositories/
+  services/
+  test_ride_integration.py
+  test_rides_csv_data.py
 ```
 
-- **Repository tests** ([tests/repositories](tests/repositories))
-  - Test database queries with in-memory SQLite
-  - Use real `aiosqlite` connections
-  - Verify SQL logic and data retrieval
+- **Model tests**: domain/entity behavior and invariants
+- **Repository tests**: SQL queries and persistence semantics
+- **Service tests**: business rules and orchestration
+- **Controller tests**: endpoint status codes, payloads, response contracts
+- **Integration tests**: end-to-end ride and data workflows
 
-- **Service tests** ([tests/services](tests/services))
-  - Test business logic
-  - Use mocked repositories
-  - Verify service orchestration
+## Fixtures
 
-- **Controller tests** ([tests/controllers](tests/controllers))
-  - Test API endpoints
-  - Use mocked services
-  - Verify HTTP request/response handling
+Shared fixtures are defined in [tests/conftest.py](../tests/conftest.py), including database setup helpers used across layers.
 
-## Test fixtures
+## CI
 
-- `test_db` ([tests/conftest.py](tests/conftest.py))
-  - Provides an in-memory SQLite database
-  - Pre-seeded with test data
-  - Isolated per test
-    (`tests/repositories/test_<entity>_repository.py`)
-  - Test SQL queries with `test_db` fixture
+GitHub Actions runs tests on pushes and pull requests to `main`.
 
-2. **Service tests** (`tests/services/test_<entity>_service.py`)
-   - Mock the repository and test business logic
-3. **Controller tests** (`tests/controllers/test_<entity>_controller.py`)
-   - Tests run automatically on GitHub Actions for:
+- Python versions: 3.11 and 3.12
+- Coverage gate: `--cov-fail-under=80`
 
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
+See workflow: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
 
-The CI pipeline enforces 80% minimum coverage.
+## API testing with Postman
 
-## Writing new tests
+For manual API checks, use:
 
-When adding a new entity:
+- [docs/postman_collection.json](postman_collection.json)
 
-1. **Repository tests**: Test SQL queries with `test_db` fixture
-2. **Service tests**: Mock the repository and test business logic
-3. **Controller tests**: Mock the service and test HTTP endpoints
+Import it into Postman and set `baseUrl` (default `http://127.0.0.1:8000`).
 
-See existing tests as examples.
+## Adding new tests
+
+When adding a new feature/entity, include:
+
+1. Repository test(s)
+2. Service test(s)
+3. Controller/API test(s)
+4. Integration test when behavior spans layers
