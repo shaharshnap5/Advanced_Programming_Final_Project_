@@ -64,7 +64,7 @@ async def test_treat_vehicle_degraded_with_station():
     
     assert result.status == VehicleStatus.available
     assert result.rides_since_last_treated == 0
-    mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V001", 1)
+    mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V001")
 
 @pytest.mark.asyncio
 async def test_report_vehicle_degraded():
@@ -154,36 +154,21 @@ async def test_treat_vehicle_not_eligible():
 
 
 @pytest.mark.asyncio
-async def test_treat_vehicle_degraded_needs_station():
-    """Test that treatment fails for degraded vehicle without station."""
-    mock_repo = Mock(spec=VehiclesRepository)
-    mock_repo.get_by_id = AsyncMock(return_value=Vehicle(
-        vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 4)
-    ))
-
-    service = VehiclesService(repository=mock_repo)
-    mock_db = Mock()
-    
-    with pytest.raises(ValueError, match="Must provide a station_id"):
-        await service.treat_vehicle(mock_db, "V004")
-
-
-@pytest.mark.asyncio
-async def test_treat_vehicle_degraded_assign_station():
-    """Test treating a degraded vehicle by assigning a station."""
+async def test_treat_vehicle_degraded_without_station():
+    """Degraded vehicles can be treated even when station is unknown."""
     mock_repo = Mock(spec=VehiclesRepository)
     mock_repo.get_by_id = AsyncMock(side_effect=[
         Vehicle(vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.degraded, rides_since_last_treated=10, last_treated_date=date(2025, 1, 4)),
-        Vehicle(vehicle_id="V004", station_id=3, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
+        Vehicle(vehicle_id="V004", station_id=None, vehicle_type=VehicleType.bike, status=VehicleStatus.available, rides_since_last_treated=0, last_treated_date=date.today())
     ])
     mock_repo.treat_vehicle = AsyncMock(return_value=True)
-    
+
     service = VehiclesService(repository=mock_repo)
     mock_db = Mock()
-    
-    result = await service.treat_vehicle(mock_db, "V004", station_id=3)
-    
+
+    result = await service.treat_vehicle(mock_db, "V004")
+
     assert result.status == VehicleStatus.available
     assert result.rides_since_last_treated == 0
-    assert result.station_id == 3
-    mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V004", 3)
+    assert result.station_id is None
+    mock_repo.treat_vehicle.assert_called_once_with(mock_db, "V004")

@@ -52,18 +52,13 @@ class VehiclesRepository:
         await cursor.close()
         return self._to_vehicle(row) if row else None
 
-    async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str, station_id: int | None = None) -> bool:
+    async def treat_vehicle(self, db: aiosqlite.Connection, vehicle_id: str) -> bool:
         """Perform maintenance on a vehicle.
         Sets: status='available', rides_since_last_treated=0, last_treated_date=today.
-        Updates station_id if provided by service layer.
         """
         vehicle = await self.get_by_id(db, vehicle_id)
         if not vehicle:
             return False
-
-        # Service layer determines whether to update station_id
-        if station_id is not None:
-            vehicle.station_id = station_id
 
         vehicle.treat()
 

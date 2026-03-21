@@ -64,7 +64,7 @@ async def test_treat_vehicle_recharges_ev_in_child_table(test_db):
     await test_db.execute("UPDATE scooters SET battery = 13 WHERE vehicle_id = 'V002'")
     await test_db.commit()
 
-    success = await repo.treat_vehicle(test_db, "V002", station_id=1)
+    success = await repo.treat_vehicle(test_db, "V002")
     assert success is True
 
     treated = await repo.get_by_id(test_db, "V002")

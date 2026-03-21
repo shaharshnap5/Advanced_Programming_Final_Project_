@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import Depends
 import aiosqlite
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
 from src.db import get_db
 from src.models.vehicle import Vehicle
@@ -25,17 +25,15 @@ async def get_vehicle(vehicle_id: str,
 @router.post("/{vehicle_id}/treat", response_model=Vehicle)
 async def treat_vehicle(
     vehicle_id: str,
-    station_id: int | None = Query(None, description="Station to assign (required for degraded vehicles without station)"),
     db: aiosqlite.Connection = Depends(get_db)
 ) -> Vehicle:
     """Perform maintenance on a vehicle.
     Requirements:
     - Vehicle must be degraded OR have >= 7 rides since last treatment
     - Sets status='available', rides_since_last_treated=0, last_treated_date=today
-    - Assigns station for previously degraded vehicles
     """
     try:
-        treated_vehicle = await service.treat_vehicle(db, vehicle_id, station_id)
+        treated_vehicle = await service.treat_vehicle(db, vehicle_id)
         return treated_vehicle
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

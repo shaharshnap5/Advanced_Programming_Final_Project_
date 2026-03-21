@@ -42,7 +42,7 @@ async def test_treat_vehicle_success(test_db):
     await test_db.commit()
     
     # Treat the vehicle
-    result = await repo.treat_vehicle(test_db, "V001", station_id=2)
+    result = await repo.treat_vehicle(test_db, "V001")
     
     assert result is True
     
@@ -58,7 +58,7 @@ async def test_treat_vehicle_not_found(test_db):
     """Test treatment on non-existent vehicle."""
     repo = VehiclesRepository()
     
-    result = await repo.treat_vehicle(test_db, "V999", station_id=1)
+    result = await repo.treat_vehicle(test_db, "V999")
     
     assert result is False
 

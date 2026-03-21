@@ -104,29 +104,28 @@ async def test_treat_vehicle_success():
 
 
 @pytest.mark.asyncio
-async def test_treat_vehicle_with_station():
-    """Test vehicle treatment with station assignment."""
+async def test_treat_vehicle_ignores_station_query_param():
+    """Treat endpoint should not depend on station query parameters."""
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
+
         with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
             mock_treat.return_value = {
                 "vehicle_id": "V004",
-                "station_id": 3,
+                "station_id": None,
                 "vehicle_type": VehicleType.bike,
                 "status": VehicleStatus.available,
                 "rides_since_last_treated": 0,
                 "last_treated_date": date.today()
             }
-            
+
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post("/vehicles/V004/treat?station_id=3")
-            
+
             assert response.status_code == 200
-            data = response.json()
-            assert data["station_id"] == 3
             mock_treat.assert_called_once()
+            assert mock_treat.call_args.args[1] == "V004"
 
 
 @pytest.mark.asyncio
@@ -203,17 +202,24 @@ async def test_report_degraded_already_degraded():
 
 
 @pytest.mark.asyncio
-async def test_treat_vehicle_needs_station():
-    """Test treatment fails for degraded vehicle without station."""
+async def test_treat_vehicle_degraded_without_station_still_succeeds():
+    """A degraded vehicle can be treated without station assignment."""
     with patch("src.controllers.vehicles_controller.get_db") as mock_get_db:
         mock_db = AsyncMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
-        
+
         with patch("src.controllers.vehicles_controller.service.treat_vehicle") as mock_treat:
-            mock_treat.side_effect = ValueError("Must provide a station_id")
-            
+            mock_treat.return_value = {
+                "vehicle_id": "V004",
+                "station_id": None,
+                "vehicle_type": VehicleType.bike,
+                "status": VehicleStatus.available,
+                "rides_since_last_treated": 0,
+                "last_treated_date": date.today()
+            }
+
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
                 response = await client.post("/vehicles/V004/treat")
-            
-            assert response.status_code == 400
+
+            assert response.status_code == 200
 
