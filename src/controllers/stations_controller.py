@@ -1,4 +1,6 @@
 from __future__ import annotations
+from fastapi import Depends
+import aiosqlite
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -14,22 +16,23 @@ service = StationsService()
 async def get_nearest_station(
     lon: float = Query(..., description="Longitude"),
     lat: float = Query(..., description="Latitude"),
+    db: aiosqlite.Connection = Depends(get_db)
 ) -> StationWithDistance:
-    async with get_db() as db:
-        station = await service.get_nearest_station(db, lon=lon, lat=lat)
+    station = await service.get_nearest_station(db, lon=lon, lat=lat)
 
     if not station:
         raise HTTPException(status_code=404, detail="No stations found")
 
-    return StationWithDistance.model_validate(station)
+    return station
 
 
 @router.get("/{station_id}", response_model=Station)
-async def get_station(station_id: int) -> Station:
-    async with get_db() as db:
-        station = await service.get_station_by_id(db, station_id)
+async def get_station(station_id: int,
+                      db: aiosqlite.Connection = Depends(get_db)) -> Station:
+
+    station = await service.get_station_by_id(db, station_id)
 
     if not station:
         raise HTTPException(status_code=404, detail="Station not found")
 
-    return Station.model_validate(station)
+    return station

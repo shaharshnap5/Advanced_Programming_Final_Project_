@@ -1,6 +1,6 @@
 # Database setup
 
-> **Note**: The `data/` folder and `data/app.db` are **not** committed to git. They are generated locally when you run the init script.
+> **Note**: CSV datasets under `data/` are part of the project. The SQLite file `data/app.db` is generated locally when you run the init script.
 
 ## 1) Install dependencies
 
@@ -12,6 +12,19 @@ pip install -r requirements.txt
 
 ```bash
 python ./scripts/init_db.py
+```
+
+This creates missing tables and seeds data from CSV files:
+
+- `data/stations.csv`
+- `data/vehicles.csv`
+- `data/users.csv`
+- `data/rides.csv`
+
+To fully reset the database (drop all tables and recreate):
+
+```bash
+python ./scripts/init_db.py --reset-db
 ```
 
 You should now have data/app.db.

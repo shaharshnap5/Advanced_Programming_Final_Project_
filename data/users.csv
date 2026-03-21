@@ -1,0 +1,11 @@
+user_id,first_name,last_name,email,payment_token
+USER001,Noam,Levi,noam.levi@example.com,tok_mock_001
+USER002,Yael,Cohen,yael.cohen@example.com,tok_mock_002
+USER003,Eitan,Mizrahi,eitan.mizrahi@example.com,tok_mock_003
+USER004,Maya,Peretz,maya.peretz@example.com,tok_mock_004
+USER005,Lior,Azoulay,lior.azoulay@example.com,tok_mock_005
+USER006,Shira,Biton,shira.biton@example.com,tok_mock_006
+USER007,Amit,David,amit.david@example.com,tok_mock_007
+USER008,Tamar,Malka,tamar.malka@example.com,tok_mock_008
+USER009,Itay,Nakash,itay.nakash@example.com,tok_mock_009
+USER010,Roni,Ohayon,roni.ohayon@example.com,tok_mock_010

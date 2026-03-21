@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.repositories.stations_repository import StationsRepository
+from src.models.station import Station, StationWithDistance
 
 
 @pytest.mark.asyncio
@@ -12,11 +13,12 @@ async def test_get_by_id(test_db):
     station = await repo.get_by_id(test_db, 1)
     
     assert station is not None
-    assert station["station_id"] == 1
-    assert station["name"] == "Test Station 1"
-    assert station["lat"] == 32.0
-    assert station["lon"] == 34.0
-    assert station["max_capacity"] == 10
+    assert isinstance(station, Station)
+    assert station.station_id == 1
+    assert station.name == "Test Station 1"
+    assert station.lat == 32.0
+    assert station.lon == 34.0
+    assert station.max_capacity == 10
 
 
 @pytest.mark.asyncio
@@ -29,6 +31,20 @@ async def test_get_by_id_not_found(test_db):
 
 
 @pytest.mark.asyncio
+async def test_get_by_id_with_vehicles(test_db):
+    """Test that get_by_id properly populates the vehicles array."""
+    repo = StationsRepository()
+
+    station = await repo.get_by_id(test_db, 1)
+
+    assert station is not None
+    assert isinstance(station.vehicles, list)
+    # Station 1 should have vehicles from the test data
+    assert len(station.vehicles) > 0
+    assert all(isinstance(v_id, str) for v_id in station.vehicles)
+
+
+@pytest.mark.asyncio
 async def test_get_nearest(test_db):
     repo = StationsRepository()
     
@@ -36,8 +52,27 @@ async def test_get_nearest(test_db):
     station = await repo.get_nearest(test_db, lon=34.0, lat=32.0)
     
     assert station is not None
-    assert station["station_id"] == 1
-    assert "distance" in station
+    assert isinstance(station, StationWithDistance)
+    assert station.station_id == 1
+    assert hasattr(station, 'distance')
+    # Verify vehicles are populated
+    assert isinstance(station.vehicles, list)
+    assert len(station.vehicles) > 0
+
+
+@pytest.mark.asyncio
+async def test_get_nearest_vehicles_populated(test_db):
+    """Test that get_nearest properly populates the vehicles array."""
+    repo = StationsRepository()
+
+    station = await repo.get_nearest(test_db, lon=34.0, lat=32.0)
+
+    assert station is not None
+    assert isinstance(station, StationWithDistance)
+    # Verify vehicles are not empty
+    assert len(station.vehicles) > 0
+    # Verify all vehicle IDs are strings
+    assert all(isinstance(v_id, str) for v_id in station.vehicles)
 
 
 @pytest.mark.asyncio
@@ -48,4 +83,5 @@ async def test_get_nearest_returns_closest(test_db):
     station = await repo.get_nearest(test_db, lon=34.1, lat=32.1)
     
     assert station is not None
-    assert station["station_id"] == 2
+    assert isinstance(station, StationWithDistance)
+    assert station.station_id == 2
