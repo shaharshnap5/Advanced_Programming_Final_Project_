@@ -186,6 +186,45 @@ async def test_get_active_user_ids_returns_only_incomplete_rides(test_db):
 
 
 @pytest.mark.asyncio
+async def test_complete_ride_updates_end_fields(test_db):
+    """Test that completing a ride persists end_station_id and end_time."""
+    repo = RidesRepository()
+    start_time = datetime(2026, 3, 17, 10, 30, 0)
+    end_time = datetime(2026, 3, 17, 11, 15, 0)
+
+    await repo.create_active_ride(
+        test_db,
+        ride_id="RIDE_COMPLETE_001",
+        user_id="USER_COMPLETE_001",
+        vehicle_id="V001",
+        start_station_id=1,
+        start_time=start_time,
+    )
+
+    updated = await repo.complete_ride(
+        test_db,
+        ride_id="RIDE_COMPLETE_001",
+        end_station_id=2,
+        end_time=end_time,
+    )
+
+    assert updated is True
+
+    cursor = await test_db.execute(
+        "SELECT end_station_id, end_time FROM rides WHERE ride_id = ?",
+        ("RIDE_COMPLETE_001",),
+    )
+    row = await cursor.fetchone()
+    await cursor.close()
+
+    assert row is not None
+    assert row["end_station_id"] == 2
+    assert row["end_time"] is not None
+    parsed_end_time = datetime.fromisoformat(row["end_time"]) if isinstance(row["end_time"], str) else row["end_time"]
+    assert parsed_end_time == end_time
+
+
+@pytest.mark.asyncio
 async def test_get_active_ride_by_user_returns_ride_object(test_db):
     """Test that get_active_ride_by_user returns a Ride object, not a database row."""
     repo = RidesRepository()

@@ -217,6 +217,7 @@ async def test_complete_ride_end_flow_with_mocked_db(test_db):
         start_station_id=1,
         start_time=datetime.now(),
     ))
+    service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
         vehicle_type=VehicleType.bike,
@@ -274,6 +275,7 @@ async def test_ride_end_selects_station_with_capacity(test_db):
         start_station_id=1,
         start_time=datetime.now(),
     ))
+    service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
         vehicle_type=VehicleType.bike,
@@ -349,6 +351,7 @@ async def test_vehicle_dock_state_transitions(test_db):
         start_station_id=1,
         start_time=datetime.now(),
     ))
+    service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.stations_service.get_stations_with_capacity = AsyncMock(return_value=mock_stations)
     # Mock stations repo for capacity check
     service.stations_repo = AsyncMock()
@@ -379,6 +382,7 @@ async def test_multiple_concurrent_rides_ending(test_db):
         start_station_id=1,
         start_time=datetime.now(),
     ))
+    service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V003",
         vehicle_type=VehicleType.bike,
@@ -428,6 +432,7 @@ async def test_payment_logic_normal_ride(test_db):
         start_station_id=1,
         start_time=datetime.now(),
     ))
+    service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
         vehicle_type=VehicleType.bike,
@@ -476,6 +481,7 @@ async def test_nearest_station_calculation(test_db):
         start_station_id=1,
         start_time=datetime.now(),
     ))
+    service.rides_repo.complete_ride = AsyncMock(return_value=True)
     service.vehicles_repo.get_by_id = AsyncMock(return_value=Vehicle(
         vehicle_id="V001",
         vehicle_type=VehicleType.bike,

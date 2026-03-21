@@ -1,4 +1,3 @@
-import datetime
 import uuid
 import aiosqlite
 from fastapi import HTTPException
@@ -146,6 +145,7 @@ class RideService:
         )
         
         station_id = nearest_station["station_id"]
+        end_time = datetime.now()
         
         # Step 3 & 4: Get vehicle and dock it (incrementing rides counter)
         vehicle = await self.vehicles_repo.get_by_id(db, ride.vehicle_id)
@@ -156,6 +156,15 @@ class RideService:
         docked_vehicle = await self.vehicles_repo.dock_vehicle(db, ride.vehicle_id, station_id)
         if not docked_vehicle:
             raise HTTPException(status_code=400, detail=f"Failed to dock vehicle {ride.vehicle_id}.")
+
+        ride_updated = await self.rides_repo.complete_ride(
+            db,
+            ride_id=ride_id,
+            end_station_id=station_id,
+            end_time=end_time,
+        )
+        if not ride_updated:
+            raise HTTPException(status_code=409, detail=f"Ride with ID {ride_id} is already ended.")
         
         # Step 5: Calculate and process payment
         # For now, return a fixed 15 ILS
