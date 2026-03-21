@@ -12,7 +12,6 @@ import aiosqlite
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-#from src.db import get_db
 from db.schema import CREATE_SQL
 from src.models.vehicle import VehicleType
 STATIONS_CSV = PROJECT_ROOT / "data" / "stations.csv"
