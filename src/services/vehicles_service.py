@@ -1,19 +1,26 @@
 from __future__ import annotations
 
 import aiosqlite
+from datetime import datetime
 
 from src.repositories.vehicles_repository import VehiclesRepository
+from src.repositories.rides_repository import RidesRepository
 from src.models.vehicle import Vehicle, VehicleStatus
 
 class VehiclesService:
-    def __init__(self, repository: VehiclesRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: VehiclesRepository | None = None,
+        rides_repository: RidesRepository | None = None,
+    ) -> None:
         self._repository = repository or VehiclesRepository()
+        self._rides_repository = rides_repository or RidesRepository()
 
     async def get_vehicle_by_id(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle | None:
         return await self._repository.get_by_id(db, vehicle_id)
 
     async def report_vehicle_degraded(self, db: aiosqlite.Connection, vehicle_id: str) -> Vehicle:
-        """Marks a vehicle as degraded due to user report."""
+        """Mark vehicle as degraded and auto-complete its active ride (if exists)."""
         vehicle = await self.get_vehicle_by_id(db, vehicle_id)
         if not vehicle:
             raise ValueError(f"Vehicle {vehicle_id} not found")
@@ -21,7 +28,19 @@ class VehiclesService:
         if vehicle.status == VehicleStatus.degraded:
             raise ValueError(f"Vehicle {vehicle_id} is already marked as degraded")
 
-        success = await self._repository.update_vehicle_status(db, vehicle_id, VehicleStatus.degraded)
+        active_ride = await self._rides_repository.get_active_ride_by_vehicle(db, vehicle_id)
+        if active_ride:
+            ride_updated = await self._rides_repository.complete_ride(
+                db,
+                ride_id=active_ride.ride_id,
+                end_station_id=None,
+                end_time=datetime.now(),
+                is_degraded_report=True,
+            )
+            if not ride_updated:
+                raise Exception(f"Failed to auto-complete active ride for vehicle {vehicle_id}")
+
+        success = await self._repository.mark_vehicle_degraded_and_detach(db, vehicle_id)
         if not success:
             raise Exception(f"Failed to report vehicle {vehicle_id} as degraded")
 
