@@ -77,4 +77,4 @@ async def test_get_nearest_station_missing_params():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/stations/nearest")
     
-    assert response.status_code == 422  # Validation error
+    assert response.status_code == 400

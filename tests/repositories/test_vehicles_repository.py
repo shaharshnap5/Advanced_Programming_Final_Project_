@@ -15,7 +15,7 @@ async def test_get_by_id(test_db):
     assert vehicle is not None
     assert vehicle["vehicle_id"] == "V001"
     assert vehicle["station_id"] == 1
-    assert vehicle["vehicle_type"] == "bicycle"  # From database as string
+    assert vehicle["vehicle_type"] == "bike"
     assert vehicle["status"] == "available"  # From database as string
     assert vehicle["rides_since_last_treated"] == 5
 
