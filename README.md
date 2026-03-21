@@ -578,4 +578,5 @@ Current simulation uses fixed ride charge for normal completions (e.g., 15 ILS),
 - [docs/DB_SETUP.md](docs/DB_SETUP.md)
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 - [docs/TESTING.md](docs/TESTING.md)
+- [docs/LINTING.md](docs/LINTING.md)
 - [docs/postman_collection.json](docs/postman_collection.json)

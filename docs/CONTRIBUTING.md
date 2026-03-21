@@ -81,3 +81,15 @@ python .\scripts\init_db.py
 python .\scripts\init_db.py
 uvicorn src.main:app --reload
 ```
+
+## Code quality checks
+
+Run linting and formatting checks before opening a PR:
+
+```bash
+python .\scripts\lint.py --fix
+python .\scripts\lint.py
+pytest
+```
+
+See [docs/LINTING.md](LINTING.md) for details.
